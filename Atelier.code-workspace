@@ -1,0 +1,9 @@
+{
+  "folders": [{ "path": "." }],
+  "settings": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.wordWrap": "on",
+    "files.trimTrailingWhitespace": true,
+  },
+}

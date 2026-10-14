@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Atelier — Studio de stylisme</title
+  ><link rel="stylesheet" href="style.css?v=0.5" />
+  <body>
+    <aside>
+      <a class="brand" href="#">atelier<span>STUDIO DE STYLISME</span></a>
+      <nav id="nav"></nav>
+      <div class="aside-bottom">
+        <span class="avatar">S</span>
+        <div>Votre studio<small>Espace personnel</small></div>
+      </div>
+    </aside>
+    <main>
+      <header>
+        <span id="crumb">Votre studio / Vue d’ensemble</span
+        ><button class="quiet" id="backup">Exporter mes données ↗</button>
+      </header>
+      <div class="notice">
+        PREMIÈRE ÉDITION
+        <span
+          >Données enregistrées dans ce navigateur · exemples fictifs · aucun
+          envoi automatique connecté</span
+        >
+      </div>
+      <section id="content"></section>
+    </main>
+    <dialog id="modal">
+      <form id="form">
+        <div class="modal-top">
+          <h2 id="modal-title"></h2>
+          <button type="button" class="quiet" id="close" aria-label="Fermer">
+            ✕
+          </button>
+        </div>
+        <div id="fields"></div>
+        <button class="primary" type="submit">Enregistrer</button>
+      </form>
+    </dialog>
+    <div id="toast" role="status"></div>
+    <script src="look-model.js?v=0.5"></script>
+    <script src="catalog.js?v=0.5"></script>
+    <script src="demo.js?v=0.5"></script>
+    <script src="app.js?v=0.5"></script>
+    <script src="workspace.js?v=0.5"></script>
+    <script src="simulation.js?v=0.5"></script>
+    <script src="look-choices.js?v=0.5"></script>
+  </body>
+</html>
