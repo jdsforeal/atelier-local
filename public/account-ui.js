@@ -56,7 +56,6 @@ cloudAccount = function () {
     `<div class="account-identity">${studioAvatar(studio,'large')}<div><span class="account-kicker">${studio?'STUDIO PRIVÉ':'MON COMPTE'}</span><h3>${esc(studio?.name||'Bienvenue dans Atelier')}</h3><small>${esc(user.email)}</small></div></div>`+
     `<div class="account-status ${cloudState.error?'has-error':''}"><span class="status-dot"></span>${esc(cloudState.error?'Des modifications attendent votre attention.':cloudState.pending||cloudState.busy?'Enregistrement en cours…':'Vos modifications sont enregistrées automatiquement.')}</div>`+
     `<div class="account-menu">${owner?'<button type="button" data-studio-profile><span>Personnaliser le studio<small>Nom et image du studio</small></span><span aria-hidden="true">›</span></button>':''}${cloudState.active?'<button type="button" data-account-team><span>Équipe et accès<small>Inviter et gérer les droits par projet</small></span><span aria-hidden="true">›</span></button>':''}<button type="button" data-notification-inbox><span>Invitations reçues<small>Rejoindre un projet partagé avec vous</small></span><span class="notification-badge" data-invitation-count ${invitationNotice.items.length?'':'hidden'}>${invitationNotice.items.length||''}</span><span aria-hidden="true">›</span></button></div>`+
-    (cloudState.studios.length>1?`<div class="account-switch"><label>Changer de studio<select id="cloud-studio-select">${cloudState.studios.map(s=>`<option value="${esc(s.id)}" ${s.id===studio?.id?'selected':''}>${esc(s.name)}${s.owner_id===user.id?' · propriétaire':' · invité·e'}</option>`).join('')}</select></label><button type="button" data-cloud-open-studio>Ouvrir ce studio</button></div>`:'')+
     `<details class="account-secondary"><summary>Autres studios</summary><p>Vous pouvez avoir votre propre studio et participer aux projets d’un autre.</p><button type="button" data-cloud-new-studio>Créer un autre studio</button></details>`+
     `${cloudState.active?`<details class="account-secondary"><summary>Dépannage et données</summary><p>Atelier enregistre automatiquement. Ces outils servent uniquement à résoudre un problème ou à importer d’anciennes données.</p><button type="button" data-cloud-reload>Récupérer la dernière sauvegarde en ligne</button><p class="note">Remplace la version affichée par celle du serveur. Une confirmation est demandée si des changements ne sont pas enregistrés.</p>${cloudState.error||cloudState.pending?'<button type="button" data-cloud-flush>Réessayer l’enregistrement</button>':''}${owner?'<button type="button" data-cloud-import>Importer les anciens projets de cet appareil</button>':''}</details>`:''}`+
     '<div class="account-footer"><button type="button" class="quiet" data-cloud-signout>Se déconnecter</button><small>Connexion Google · Gmail reste séparé</small></div>',()=>{});
@@ -94,13 +93,14 @@ const accountOriginalModal=modal;
 modal=function(...args){document.querySelector('#modal').classList.remove('account-dialog');return accountOriginalModal(...args);};
 const accountOriginalRender=render;
 render=function(){
+  document.querySelector('#studio-switcher')?.remove();
   accountOriginalRender();
   if(!cloudState.user){Object.assign(invitationNotice,{userId:'',items:[],checked:false,error:false,lastCheck:0});return;}
   const studio=cloudState.studio;
   const header=document.querySelector('header');
   document.querySelector('#cloud-account-button')?.remove();
   document.querySelectorAll('.account-header-actions,#invitation-notice').forEach(node=>node.remove());
-  header.insertAdjacentHTML('beforeend',`<div class="account-header-actions"><button class="notification-button" data-notification-inbox aria-label="${esc(invitationCountLabel())}">${invitationBellIcon}<span class="notification-badge" data-invitation-count hidden></span></button><button class="studio-account-button" data-cloud-account aria-label="Ouvrir les paramètres du studio">${studioAvatar(studio)}<span>${esc(studio?.name||'Mon compte')}</span><span aria-hidden="true">⌄</span></button></div>`);
+  header.insertAdjacentHTML('beforeend',`<div class="account-header-actions"><button class="notification-button" data-notification-inbox aria-label="${esc(invitationCountLabel())}">${invitationBellIcon}<span class="notification-badge" data-invitation-count hidden></span></button><button class="studio-account-button" data-studio-switcher aria-haspopup="dialog" aria-expanded="false" aria-label="Changer de studio">${studioAvatar(studio)}<span>${esc(studio?.name||'Mon compte')}</span><span aria-hidden="true">⌄</span></button></div>`);
   const bottom=document.querySelector('.aside-bottom');
   bottom.innerHTML=`<button class="sidebar-studio-button" data-cloud-account aria-label="Ouvrir les paramètres du studio">${studioAvatar(studio)}<span><strong>${esc(studio?.name||'Mon compte')}</strong><small>Paramètres du studio</small></span><span aria-hidden="true">⌄</span></button>`;
   document.querySelectorAll('.notice [data-cloud-account],.notice [data-workspace-rename]').forEach(node=>node.remove());
@@ -110,9 +110,43 @@ render=function(){
   }
   refreshInvitationBadges();checkInvitations();
 };
+function closeStudioSwitcher(focus=false) {
+  document.querySelector('#studio-switcher')?.remove();
+  const trigger=document.querySelector('[data-studio-switcher]');
+  trigger?.setAttribute('aria-expanded','false');if(focus)trigger?.focus();
+}
+function openStudioSwitcher() {
+  if(document.querySelector('#studio-switcher'))return closeStudioSwitcher();
+  const trigger=document.querySelector('[data-studio-switcher]');if(!trigger)return;
+  const panel=document.createElement('div');panel.id='studio-switcher';panel.className='studio-switcher';
+  panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Choisir un studio');
+  panel.innerHTML=`<p class="account-kicker">VOS STUDIOS</p><div class="studio-switcher-list">${cloudState.studios.map(studio=>`<button type="button" data-switch-studio="${esc(studio.id)}" ${studio.id===cloudState.studio?.id?'aria-current="true"':''}>${studioAvatar(studio)}<span><strong>${esc(studio.name)}</strong><small>${studio.owner_id===cloudState.user.id?'Propriétaire':'Invité·e'}</small></span><span class="studio-switcher-check" aria-hidden="true">${studio.id===cloudState.studio?.id?'✓':'→'}</span></button>`).join('')}</div>${cloudState.studios.length<2?'<p class="note">Vos autres studios apparaîtront ici lorsque vous aurez rejoint un projet partagé.</p>':''}`;
+  trigger.parentElement.append(panel);trigger.setAttribute('aria-expanded','true');
+  panel.querySelector('button')?.focus();
+}
+document.addEventListener('pointerdown',event=>{
+  if(!event.target.closest('#studio-switcher,[data-studio-switcher]'))closeStudioSwitcher();
+});
+document.addEventListener('keydown',event=>{
+  if(!document.querySelector('#studio-switcher'))return;
+  if(event.key==='Escape'){event.preventDefault();closeStudioSwitcher(true);}
+  if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){
+    const buttons=Array.from(document.querySelectorAll('#studio-switcher button'));
+    const current=buttons.indexOf(document.activeElement);if(!buttons.length)return;
+    event.preventDefault();const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(current+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length;buttons[next].focus();
+  }
+});
 document.addEventListener('click',async event=>{
   const b=event.target.closest('button');if(!b)return;
   try{
+    if(b.hasAttribute('data-studio-switcher'))openStudioSwitcher();
+    if(b.dataset.switchStudio){
+      const id=b.dataset.switchStudio;
+      if(id===cloudState.studio?.id){closeStudioSwitcher(true);return;}
+      if(cloudState.loading)return;
+      b.disabled=true;
+      try{await cloudLoadStudio(id);closeStudioSwitcher();}finally{b.disabled=false;}
+    }
     if(b.hasAttribute('data-notification-inbox'))await cloudInbox();
     if(b.hasAttribute('data-notification-refresh'))await cloudInbox();
     if(b.hasAttribute('data-studio-profile'))await studioProfile();

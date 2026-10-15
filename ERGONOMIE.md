@@ -27,3 +27,9 @@ Tous les champs d’image (studio, couverture du projet, pièces, options et ins
 Les fichiers hors JPEG/PNG/WebP, trop lourds ou multiples dans un champ simple sont refusés. Un dépôt invalide conserve la sélection valide précédente. Les aperçus utilisent des URL locales temporaires libérées à leur remplacement ou au retrait du formulaire.
 
 Vérification navigateur : formulaire projet, sélection réelle d’une image depuis le sélecteur, aperçu puis retrait sans enregistrement. Tests des événements de dépôt simple/multiple et refus de format/taille ; suite complète réussie. Le glissement physique depuis Finder n’a pas été automatisé par l’outil navigateur.
+
+## Version 0.14.2 — sélecteur de studios
+
+En haut à droite, un menu déroulant liste les studios autorisés avec image (ou initiale), nom, rôle et coche du studio actif. Cliquer sur une ligne ouvre directement le studio via cloudLoadStudio ; les changements non synchronisés continuent de bloquer le changement d’espace. Le bouton du bas à gauche reste dédié aux paramètres du studio. Le sélecteur redondant dans ces paramètres est retiré.
+
+Vérifié dans le navigateur : ouverture, liste réelle à un studio, fermeture en sélectionnant le studio actif, paramètres toujours accessibles séparément. Navigation clavier et fermeture extérieure prises en charge. Le changement réel entre deux studios reste à vérifier avec un compte qui dispose de deux studios ; aucun studio fictif ajouté au compte pour ce test. Contrôle syntaxique et tests notifications/synchronisation réussis.

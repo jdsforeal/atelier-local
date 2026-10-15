@@ -1928,3 +1928,10 @@ body.atelier-auth-pending > aside,body.atelier-auth-pending > main {visibility:h
 .image-upload-previews{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.image-upload-previews:empty{display:none}.image-upload-previews figure{margin:0;width:96px;min-width:0}.image-upload-previews img{width:96px;height:80px;object-fit:contain;border-radius:10px;background:#f3f2ee;border:1px solid #e5e5dc}.image-upload-previews figcaption{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:5px;color:#73766e}
 .image-upload-clear{margin-top:10px;font-size:12px;padding:7px 11px;background:transparent;color:#5b6553;border:0;text-decoration:underline;text-underline-offset:3px}.image-upload-error{color:#a1382c;font-size:13px;margin:10px 0}.image-upload-clear[hidden],.image-upload-error[hidden]{display:none}
 @media(max-width:650px){.image-upload-zone{min-height:155px;padding:20px 12px}.image-upload-zone strong{font-size:14px}}
+
+.account-header-actions{position:relative}
+.studio-switcher{position:absolute;right:0;top:calc(100% + 12px);z-index:80;width:min(340px,calc(100vw - 32px));padding:18px;background:#fff;border:1px solid #e1e4da;border-radius:20px;box-shadow:0 16px 50px #25301f26;text-align:left}
+.studio-switcher>.account-kicker{margin:0 0 12px}.studio-switcher-list{display:grid;gap:6px;max-height:50vh;overflow:auto}
+.studio-switcher-list button{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:0;border-radius:13px;background:transparent;text-align:left;white-space:normal}
+.studio-switcher-list button:hover,.studio-switcher-list button:focus-visible{background:#f2f4ed}.studio-switcher-list button[aria-current]{background:#eaf0e3}
+.studio-switcher-list button>span:nth-child(2){display:grid;gap:4px;flex:1;min-width:0}.studio-switcher-list strong{font-size:14px;overflow-wrap:anywhere}.studio-switcher-list small{font-size:12px;color:#78816e}.studio-switcher-check{color:#526848}.studio-switcher .note{margin:12px 3px 0;font-size:12px;line-height:1.5}
