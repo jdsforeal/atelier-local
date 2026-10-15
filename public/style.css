@@ -1814,3 +1814,65 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+.finance-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+.finance-grid .panel strong {
+  font-size: 27px;
+}
+.finance-grid .panel small:last-child {
+  line-height: 1.5;
+}
+.finance-alert {
+  background: #fff0e8;
+  border-left: 4px solid #b26742;
+  padding: 15px 20px;
+  line-height: 1.6;
+  color: #7c3d24;
+}
+.finance-deposits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+.finance-deposits p {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 13px;
+}
+.finance-deposits strong {
+  font-size: 23px;
+}
+.finance-cost-details {
+  margin-top: 20px;
+}
+.finance-cost-details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.finance-cost-details .expense-row {
+  width: 100%;
+}
+#finance-summary > .panel {
+  margin-bottom: 24px;
+}
+@media (max-width: 700px) {
+  .finance-grid,
+  .finance-deposits {
+    grid-template-columns: 1fr 1fr;
+  }
+  .finance-grid .panel {
+    padding: 14px;
+  }
+  .finance-grid .panel strong {
+    font-size: 23px;
+  }
+}
+@media (max-width: 450px) {
+  .finance-grid,
+  .finance-deposits {
+    grid-template-columns: 1fr;
+  }
+}

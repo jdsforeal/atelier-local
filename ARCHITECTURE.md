@@ -68,3 +68,7 @@ Le site reste autonome pour les projets et brouillons. Le service ne reçoit que
 ### Préparation Qonto 0.9.2
 
 `public/qonto-model.js` prépare les données sans réseau ; `public/qonto-preparation.js` affiche les contrôles et le parcours simulé dans Devis. `qonto-integration/adapter.mjs` définit la frontière du futur transport privé, testé uniquement avec un faux Qonto. Les informations de client sont reliées au document PDF, avec nouvelle vérification d'identité lorsqu'elles changent. Voir `qonto-integration/README.md` pour les étapes de connexion restantes et les limites.
+
+### Budget & devis 0.10.0
+
+`public/finance-workspace.js` unifie la navigation vers l’ancien onglet `quote`, sans supprimer les données ni les exports existants. `envelopeIndicators` calcule les écarts d’enveloppe, la couverture des coûts et les cautions séparées. Une modification de quantité ou tarif actualise la synthèse sans recréer le champ en cours de saisie ; la sauvegarde est différée brièvement. Les coûts ne sont jamais déduits du montant facturé : le solde est un indicateur séparé.

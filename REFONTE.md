@@ -55,3 +55,9 @@ Bouton « Exporter le devis PDF » dans le projet : document A4 dédié, lignes,
 ## 0.9.2 — Préparation Qonto sans compte connecté
 
 Section dans Devis : choix des lignes à facturer, identité du donneur d'ordre reliée au PDF, contrôles de dates/TVA/montants et aperçu du parcours futur en simulation locale. Les statuts réels restent inchangés. Adaptateur de contrat testé avec un faux transport et journal anti-doublon ; aucun accès Qonto effectif. OAuth, rapprochement des clients, paramètres de TVA/numérotation et tests sandbox réels restent à réaliser quand le compte sera disponible. Aucun hébergement ni abonnement activé.
+
+## 0.10.0 — Budget & devis dans un seul espace
+
+Les anciens liens Budget ouvrent désormais l’onglet unique Budget & devis. L’enveloppe client HT/TTC et six indicateurs sont placés au-dessus du devis : cible, devis en construction, reste à répartir/dépassement, coûts prévus, enveloppe après coûts et solde du devis après coûts. La saisie des tarifs et quantités met les indicateurs à jour directement. Les coûts du projet restent accessibles dans la même page, avec les exports PDF et la préparation Qonto.
+
+Les cautions prévues, engagées à récupérer et déjà récupérées restent distinctes des coûts et du devis. Un scénario explicite sans remboursement donne une anticipation, sans transformer cette hypothèse en dépense réelle. Les comparaisons utilisent les montants saisis ; l’utilisateur doit garder une base de TVA cohérente entre coûts et enveloppe. Les tarifs du devis ne modifient pas les coûts réels et la synchronisation depuis les frais reste explicite, avec conservation des versions.
