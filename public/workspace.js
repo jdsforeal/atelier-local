@@ -363,22 +363,7 @@ action = function (a) {
         id: uid(),
         project: pid,
         lines: [
-          ...db.pieces
-            .filter(
-              (x) =>
-                x.project === pid &&
-                (x.commit ||
-                  (x.selection === "Retenue" &&
-                    !["Écarté", "Indisponible"].includes(x.status))),
-            )
-            .map((x) => ({ name: x.name, qty: 1, rate: Number(x.price || 0) })),
-          ...db.expenses
-            .filter((x) => x.project === pid && x.state !== "Annulé")
-            .map((x) => ({
-              name: x.name,
-              qty: 1,
-              rate: Number(x.amount || 0),
-            })),
+          ...quoteForecastLines(p),
           { name: "Prestation de stylisme", qty: 1, rate: 0 },
         ],
       };

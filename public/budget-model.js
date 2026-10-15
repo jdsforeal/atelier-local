@@ -4,12 +4,15 @@ function projectFinancials(database, project) {
   const amount = (value) => Math.max(0, Number(value) || 0);
   const sum = (rows, key) => rows.reduce((n, row) => n + amount(row[key]), 0);
   const committed = items.filter((p) => p.commit);
-  const selected = items.filter(
-    (p) =>
-      !p.commit &&
-      p.selection === "Retenue" &&
-      !["Écarté", "Indisponible"].includes(p.status),
-  );
+  const selected =
+    typeof flowSelected === "function"
+      ? flowSelected(database, project).filter((x) => !x.commit)
+      : items.filter(
+          (x) =>
+            !x.commit &&
+            x.selection === "Retenue" &&
+            !["Écarté", "Indisponible"].includes(x.status),
+        );
   const expenses = (database.expenses || []).filter(
     (e) => e.project === project.id && e.state !== "Annulé",
   );

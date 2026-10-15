@@ -331,8 +331,10 @@ function quoteForecastLines(p) {
         (x) =>
           x.project === p.id &&
           (x.commit ||
-            (x.selection === "Retenue" &&
-              !["Écarté", "Indisponible"].includes(x.status))),
+            (typeof flowSelected === "function"
+              ? flowSelected(db, p).some((piece) => piece.id === x.id)
+              : x.selection === "Retenue" &&
+                !["Écarté", "Indisponible"].includes(x.status))),
       )
       .map((x) => ({
         name: x.name,

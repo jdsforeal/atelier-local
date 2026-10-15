@@ -1876,3 +1876,6 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+/* Planches client et suivi transversal */
+.client-board-workspace .client-look{margin:28px 0}.client-look h3{margin-top:30px}.client-look .choice-card img{height:260px;object-fit:contain;background:white}.flow-actions{margin-top:28px}.flow-actions details p{padding:12px 0;border-bottom:1px solid #deded5}.client-board-workspace .toolbar{flex-wrap:wrap}.variant-summary label{max-width:340px}.client-look .choice-body{padding:18px}

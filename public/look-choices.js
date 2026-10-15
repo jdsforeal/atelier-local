@@ -8,8 +8,8 @@ function choiceCard(piece, archived) {
     ${piece.image ? `<img src="${esc(piece.image)}" alt="${esc(piece.name)}" loading="lazy">` : art(0)}
     <div class="choice-body"><small>${esc(piece.brand)}</small><h3>${esc(piece.name)}</h3>
     <span class="tag">${esc(piece.selection || "À comparer")}</span>
-    <p>${esc(piece.mode)} · coût ${euro(piece.price)} ${piece.commit ? "· engagé" : "· option hors budget"}</p>
-    <small>Disponibilité / logistique : ${esc(piece.status)}</small>
+    <p>${esc(piece.mode)} · coût ${euro(piece.price)} ${piece.commit ? "· engagé" : "· prévision si retenue"}</p>
+    <small>Disponibilité : ${esc(typeof flowAvailability === "function" ? flowAvailability(piece, project()) : piece.status)} · Suivi : ${esc(piece.status)}${piece.clientApproval ? " · choix validé par le client" : ""}</small>
     ${piece.selectionReason ? `<p class="choice-reason">${esc(piece.selectionReason)}</p>` : ""}
     <div class="actions">${!archived && !retained && piece.selection !== "Écartée" ? `<button class="primary" data-retain-piece="${esc(piece.id)}">Retenir</button>` : ""}
     ${!archived && piece.selection !== "Écartée" ? `<button data-reject-piece="${esc(piece.id)}">Écarter</button>` : ""}
@@ -35,7 +35,11 @@ function lookChoicesView(project) {
       .map((look) => {
         const archived = project.status === "Terminé";
         const allPieces = db.pieces.filter(
-          (piece) => piece.project === project.id && piece.look === look.id,
+          (piece) =>
+            piece.project === project.id &&
+            (typeof flowInLook === "function"
+              ? flowInLook(piece, look.id)
+              : piece.look === look.id),
         );
         const variant = look.variants.find(
           (variant) => variant.id === look.activeVariant,
@@ -52,12 +56,21 @@ function lookChoicesView(project) {
           .map((need) => {
             const options = allPieces.filter(
               (piece) =>
-                piece.needId === need.id &&
-                (!piece.variantId || piece.variantId === look.activeVariant),
+                (piece.needId === need.id ||
+                  piece.lookUses?.some(
+                    (u) => u.look === look.id && u.needId === need.id,
+                  )) &&
+                (!piece.variantId ||
+                  piece.variantId === look.activeVariant ||
+                  piece.look !== look.id),
             );
             const retained = allPieces.filter(
               (piece) =>
-                piece.needId === need.id && piece.selection === "Retenue",
+                (piece.needId === need.id ||
+                  piece.lookUses?.some(
+                    (u) => u.look === look.id && u.needId === need.id,
+                  )) &&
+                piece.selection === "Retenue",
             );
             return `<div class="need-section"><div class="section-head"><div><h3>${esc(need.name)}</h3><small>${need.multiple ? "Plusieurs pièces finales possibles" : "Une pièce finale"} · ${options.length} options dans cette piste · ${retained.length} retenue${retained.length > 1 ? "s" : ""} au total</small></div>
             ${!archived ? `<button class="quiet" data-multiple-need="${esc(look.id)}:${esc(need.id)}">Réglage</button><button data-add-option="${esc(look.id)}:${esc(need.id)}">＋ Une option</button>` : ""}</div>
@@ -292,9 +305,11 @@ document.addEventListener("click", (event) => {
       "Retenir cette option",
       field("reason", "Motif du choix", "textarea"),
       (data) => {
-        if (!data.reason.trim())
-          throw new Error("Ajoutez un motif pour conserver la trace du choix.");
-        return retainLookPiece(db, piece.id, data.reason);
+        return retainLookPiece(
+          db,
+          piece.id,
+          data.reason.trim() || "Option retenue par le studio",
+        );
       },
     );
   }
@@ -316,8 +331,7 @@ document.addEventListener("click", (event) => {
             '<p class="note">Écarter du look ne résilie pas une location. Libérez le coût uniquement après confirmation du fournisseur.</p>'
           : ""),
       (data) => {
-        if (!data.reason.trim())
-          throw new Error("Ajoutez un motif pour conserver la trace du choix.");
+        data.reason = data.reason.trim() || "Option écartée par le studio";
         piece.selection = "Écartée";
         piece.selectionReason = data.reason;
         if (data.financialDecision === "release") piece.commit = false;

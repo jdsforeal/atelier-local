@@ -22,6 +22,8 @@ function mailGroups(p) {
       ...g,
       pieces: g.pieces.filter(
         (x) =>
+          x.requestAvailability !== false &&
+          !x.stockOwned &&
           !["Stock du studio"].includes(x.mode) &&
           !["Confirmé", "Reçu", "Retour en cours"].includes(x.status),
       ),
@@ -297,7 +299,7 @@ document.addEventListener("change", (event) => {
     if (t.dataset.mailApprove) {
       updateMailDraft(t.dataset.mailApprove, (d, row) => {
         if (t.checked) {
-          const check = { ...row.draft, stale: false };
+          const check = row.draft;
           const error = mailValidationError(check);
           if (error) throw Error(error);
           d.signature = row.draft.currentSignature;
@@ -362,7 +364,7 @@ document.addEventListener("click", async (event) => {
         if (
           !mailCanEdit(project(), row.draft) ||
           row.group?.key === "unassigned" ||
-          mailValidationError({ ...row.draft, stale: false })
+          mailValidationError(row.draft)
         ) {
           issues++;
           continue;

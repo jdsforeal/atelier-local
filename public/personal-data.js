@@ -75,11 +75,13 @@ function cleanPersonalRecords(database, legacy) {
     "supplierDrafts",
     "selectionHistory",
     "quoteVersions",
+    "clientBoards",
   ])
     take(
       key,
       (x) =>
         marker(x) ||
+        (key === "clientBoards" && projectIds.has(x.project)) ||
         (projectIds.has(x.project) &&
           (/^(full-|initial-full-)/.test(x.id || "") ||
             (key === "selectionHistory" &&

@@ -14,7 +14,16 @@ function mailGroupSignature(project, group) {
     project.date,
     project.brief,
     group.pieces
-      .map((p) => [p.id, p.name, p.brand, p.mode, p.url, p.note])
+      .map((p) => [
+        p.id,
+        p.name,
+        p.brand,
+        p.mode,
+        p.url,
+        p.note,
+        p.size,
+        p.returnDue,
+      ])
       .sort((a, b) => a[0].localeCompare(b[0])),
   ]);
 }
@@ -45,7 +54,7 @@ function mailDraftFor(project, group, existing, signature) {
     ...new Set(group.contacts.map((c) => mailAddress(c.email)).filter(Boolean)),
   ];
   return {
-    id: `mail-${project.id}-${group.key}`,
+    id: `mail-${project.id}-${group.key}${project.mailRevision ? "-r" + project.mailRevision : ""}`,
     project: project.id,
     key: group.key,
     supplierName: name,

@@ -148,14 +148,37 @@ function retainLookPiece(
   const look = project?.looks.find((look) => look.id === piece.look);
   const need = look?.needs.find((need) => need.id === piece.needId);
   if (!need) throw new Error("Associez cette pièce à un besoin du look.");
-  if (["Écarté", "Indisponible"].includes(piece.status)) {
+  if (
+    ["Écarté", "Indisponible"].includes(piece.status) ||
+    (typeof flowAvailability === "function" &&
+      flowAvailability(piece, project) === "Indisponible")
+  ) {
     throw new Error("Réactivez cette option avant de la retenir.");
   }
-  if (!need.multiple) {
+  if (
+    !need.multiple ||
+    (typeof flowUses === "function" &&
+      flowUses(piece).some(
+        (use) =>
+          !project.looks
+            .find((l) => l.id === use.look)
+            ?.needs.find((n) => n.id === use.needId)?.multiple,
+      ))
+  ) {
     const previous = database.pieces.filter(
       (other) =>
-        other.look === piece.look &&
-        other.needId === piece.needId &&
+        other.project === piece.project &&
+        (typeof flowUses === "function"
+          ? flowUses(piece).some(
+              (use) =>
+                flowUses(other).some(
+                  (u) => u.look === use.look && u.needId === use.needId,
+                ) &&
+                !project.looks
+                  .find((l) => l.id === use.look)
+                  ?.needs.find((n) => n.id === use.needId)?.multiple,
+            )
+          : other.look === piece.look && other.needId === piece.needId) &&
         other.selection === "Retenue" &&
         other.id !== piece.id,
     );

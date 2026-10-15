@@ -20,6 +20,10 @@ function envelopeIndicators(project, financials, quoteAmountsValue, items) {
           !x.commit &&
           !x.cautionReturned &&
           x.selection === "Retenue" &&
+          (typeof flowSelected !== "function" ||
+            flowSelected({ pieces: items }, project).some(
+              (p) => p.id === x.id,
+            )) &&
           !["Écarté", "Indisponible", "Retourné"].includes(x.status),
       )
       .reduce((n, x) => n + Math.max(0, Number(x.caution) || 0), 0),

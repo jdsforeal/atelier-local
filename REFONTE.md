@@ -61,3 +61,20 @@ Section dans Devis : choix des lignes à facturer, identité du donneur d'ordre 
 Les anciens liens Budget ouvrent désormais l’onglet unique Budget & devis. L’enveloppe client HT/TTC et six indicateurs sont placés au-dessus du devis : cible, devis en construction, reste à répartir/dépassement, coûts prévus, enveloppe après coûts et solde du devis après coûts. La saisie des tarifs et quantités met les indicateurs à jour directement. Les coûts du projet restent accessibles dans la même page, avec les exports PDF et la préparation Qonto.
 
 Les cautions prévues, engagées à récupérer et déjà récupérées restent distinctes des coûts et du devis. Un scénario explicite sans remboursement donne une anticipation, sans transformer cette hypothèse en dépense réelle. Les comparaisons utilisent les montants saisis ; l’utilisateur doit garder une base de TVA cohérente entre coûts et enveloppe. Les tarifs du devis ne modifient pas les coûts réels et la synchronisation depuis les frais reste explicite, avec conservation des versions.
+
+
+## Version 0.11 — sélection client et suivi transversal
+
+- `flow-model.js` sépare disponibilité datée, sélection créative et engagement. Les modèles existants sont conservés sans migration destructive.
+- `client-flow.js` ajoute « Sélection client », ses versions conservées, l’enregistrement manuel des validations reçues, les usages d’une acquisition dans plusieurs looks et les actions du projet. Les pièces de stock déjà réutilisées conservent leur `stockSourceId` et leurs suivis par projet ; alerte sur même date, sans promesse de détection complète de conflits horaires.
+- Une piste budgétaire par look évite de chiffrer simultanément des silhouettes alternatives. Une acquisition partagée n’est comptée qu’une fois ; les engagements restent dus même hors scénario. Les prévisions et nouveaux devis utilisent la même liste.
+- Le PDF client autonome classe par look et piste, six options par page ; prix facultatifs, disponibilité explicite, sources cliquables. Images distantes non accessibles : emplacement signalé, importer le fichier pour garantir la photo.
+- Les validations sont consignées par le studio, avec auteur et date ; aucun portail client ou signature électronique. Les versions exportées/conservées ne sont pas réécrites. La validation n’engage pas de dépense.
+- Report : choix de décaler les tâches ouvertes, échéances de réception/retour et étapes non faites ; dates réelles intactes. Disponibilités/réservations à reconfirmer.
+- Versions du devis client conservées séparément du brouillon et alerte si les coûts de référence changent. Le PDF reste un brouillon documentaire.
+- Brouillon mail périmé : actualisation explicite du texte, ancienne révision conservée, puis validation. Complément : nouveau message et identifiant propre, ancien envoi préservé. Une relance déjà côté serveur doit être arrêtée via la connexion Gmail ; aucune fausse confirmation locale.
+- Annulation : les mécanismes existants bloquent l’envoi ; le tableau garde les coûts dus, retours et cautions à régler. Réception fournisseur et remboursement restent distincts.
+
+Limites inchangées : données locales au navigateur, sauvegardes nécessaires ; pas de synchronisation partagée, pas de Gmail/Qonto actifs, aucune dépense d’hébergement. Les réponses fournisseur et client sont saisies manuellement : aucun mail n’est interprété comme confirmation de disponibilité.
+
+Validation : suite complète, nouveaux tests métier (options exclusives, partage, budget, versions, validation, reports, cautions), essais dans le navigateur en simulation et PDF de contrôle sur trois pages.
