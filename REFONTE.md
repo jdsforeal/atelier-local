@@ -82,3 +82,7 @@ Validation : suite complète, nouveaux tests métier (options exclusives, partag
 ## Version 0.11.1 — aperçu avant téléchargement
 
 Moodboards, sélections client, devis de travail et versions conservées ouvrent un aperçu commun dans l’application. Les pages affichées sont exactement les images utilisées pour construire le PDF ; navigation précédente/suivante, page entière ou pleine largeur, fermeture et téléchargement explicite. Aucun téléchargement au simple clic de prévisualisation. L’aperçu d’une sélection conserve une version marquée « Prévisualisée », sans la déclarer téléchargée ou transmise. Tests existants réussis ; vérification navigateur du devis (1 page), du moodboard (2 pages) et de la sélection (7 pages), navigation et affichage pleine largeur.
+
+## Version 0.11.2 — lecture continue des aperçus
+
+Toutes les pages sont affichées à la suite dans une zone défilante. Le compteur suit le défilement ; les flèches servent de raccourcis vers les pages adjacentes. En-tête et téléchargement restent visibles. Vérifié dans le navigateur sur une sélection de sept pages : scroll vers la deuxième page et affichage simultané du début de la suivante.

@@ -5,7 +5,7 @@ render = function () {
   if (badge?.firstChild)
     badge.firstChild.textContent = badge.firstChild.textContent.replace(
       /^0\.8 /,
-      "0.11.1 ",
+      "0.11.2 ",
     );
   if (demoMode) return;
   const note = [...document.querySelectorAll("p.note")].find((el) =>
