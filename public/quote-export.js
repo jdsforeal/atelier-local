@@ -371,7 +371,7 @@ render = function () {
   if (!panel) return;
   panel.insertAdjacentHTML(
     "afterbegin",
-    '<div class="actions"><button class="primary" data-quote-pdf>Exporter le devis PDF</button><button data-quote-settings>Coordonnées et TVA</button></div>',
+    '<div class="actions"><button class="primary" data-quote-pdf>Prévisualiser le devis</button><button data-quote-settings>Coordonnées et TVA</button></div>',
   );
   const q = db.quotes.find((x) => x.project === pid);
   try {
@@ -391,16 +391,11 @@ document.addEventListener("click", async (event) => {
       q = db.quotes.find((x) => x.project === p.id);
     if (!q?.lines?.length) throw Error("Ajoutez au moins une ligne au devis.");
     const pages = quotePdfPages(p, q, db.quoteSettings);
-    const blob = moodboardPdf(pages),
-      url = URL.createObjectURL(blob),
-      link = document.createElement("a");
-    link.href = url;
-    link.download = `Devis-${p.name.replace(/[^\p{L}\p{N} _-]/gu, "").slice(0, 70)}-brouillon-v${q.version || 1}.pdf`;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-    toast("PDF du devis généré : " + pages.length + " page(s).");
+    previewDocument(
+      pages,
+      `Devis-${p.name.replace(/[^\p{L}\p{N} _-]/gu, "").slice(0, 70)}-brouillon-v${q.version || 1}.pdf`,
+      "Devis · " + p.name,
+    );
   } catch (error) {
     toast(error.message);
   } finally {

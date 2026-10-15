@@ -78,3 +78,7 @@ Les cautions prévues, engagées à récupérer et déjà récupérées restent 
 Limites inchangées : données locales au navigateur, sauvegardes nécessaires ; pas de synchronisation partagée, pas de Gmail/Qonto actifs, aucune dépense d’hébergement. Les réponses fournisseur et client sont saisies manuellement : aucun mail n’est interprété comme confirmation de disponibilité.
 
 Validation : suite complète, nouveaux tests métier (options exclusives, partage, budget, versions, validation, reports, cautions), essais dans le navigateur en simulation et PDF de contrôle sur trois pages.
+
+## Version 0.11.1 — aperçu avant téléchargement
+
+Moodboards, sélections client, devis de travail et versions conservées ouvrent un aperçu commun dans l’application. Les pages affichées sont exactement les images utilisées pour construire le PDF ; navigation précédente/suivante, page entière ou pleine largeur, fermeture et téléchargement explicite. Aucun téléchargement au simple clic de prévisualisation. L’aperçu d’une sélection conserve une version marquée « Prévisualisée », sans la déclarer téléchargée ou transmise. Tests existants réussis ; vérification navigateur du devis (1 page), du moodboard (2 pages) et de la sélection (7 pages), navigation et affichage pleine largeur.

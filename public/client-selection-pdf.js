@@ -134,12 +134,9 @@ async function clientSelectionPages(board) {
   return pages;
 }
 async function exportClientSelection(board) {
-  const blob = moodboardPdf(await clientSelectionPages(board));
-  const url = URL.createObjectURL(blob),
-    a = document.createElement("a");
-  a.href = url;
-  a.download =
-    "Atelier-selection-" + board.name.replace(/[^a-z0-9à-ÿ]+/gi, "-") + ".pdf";
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  previewDocument(
+    await clientSelectionPages(board),
+    "Atelier-selection-" + board.name.replace(/[^a-z0-9à-ÿ]+/gi, "-") + ".pdf",
+    "Sélection client · " + board.name,
+  );
 }

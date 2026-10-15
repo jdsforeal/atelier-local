@@ -1,6 +1,6 @@
 /** Budget vivant et planches exportables : les écrans lisent les mêmes données du projet. */
 function moodboardMarkup(p) {
-  return `<div class="toolbar"><button data-import-inspirations>＋ Importer plusieurs images</button><button data-board-selection>Ajouter les pièces retenues</button><select id="board-layout" aria-label="Composition du moodboard">${opts(["Éditorial", "Grille"], p.boardLayout || "Éditorial")}</select><button class="primary" data-export-moodboard ${p.boards.length ? "" : "disabled"}>Télécharger le PDF</button></div>
+  return `<div class="toolbar"><button data-import-inspirations>＋ Importer plusieurs images</button><button data-board-selection>Ajouter les pièces retenues</button><select id="board-layout" aria-label="Composition du moodboard">${opts(["Éditorial", "Grille"], p.boardLayout || "Éditorial")}</select><button class="primary" data-export-moodboard ${p.boards.length ? "" : "disabled"}>Prévisualiser le PDF</button></div>
     <p class="note">Images, descriptions et liens sont facultatifs et modifiables après import. Le PDF contient uniquement les planches, avec des liens sources cliquables.</p>
     <div class="editorial-board ${p.boardLayout === "Grille" ? "grid-layout" : ""}">${p.boards.map((b, i) => `<figure><img src="${esc(b.image)}" alt="${esc(b.caption || "Inspiration " + (i + 1))}"><figcaption><small>${String(i + 1).padStart(2, "0")}</small><p>${esc(b.caption || "Sans légende")}</p>${b.url ? `<a href="${esc(b.url)}" target="_blank" rel="noopener">Source ↗</a>` : ""}<div class="actions"><button data-edit-inspiration="${i}">Légende / lien</button><button data-remove-board="${i}" aria-label="Supprimer l’inspiration ${i + 1}">Retirer</button></div></figcaption></figure>`).join("")}</div>
     ${p.boards.length ? "" : '<div class="empty">Importez vos références en une fois, ou reprenez les pièces retenues du projet.</div>'}`;
@@ -184,26 +184,21 @@ async function exportMoodboard() {
   button.disabled = true;
   button.textContent = "Préparation du PDF…";
   try {
-    const blob = moodboardPdf(await drawMoodboardPages(p));
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download =
+    const pages = await drawMoodboardPages(p);
+    previewDocument(
+      pages,
       "Moodboard-" +
-      p.name.replace(/[^\p{L}\p{N} _-]/gu, "") +
-      "-v" +
-      (p.boardRevision || 1) +
-      ".pdf";
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-    toast("PDF du moodboard téléchargé.");
+        p.name.replace(/[^\p{L}\p{N} _-]/gu, "") +
+        "-v" +
+        (p.boardRevision || 1) +
+        ".pdf",
+      "Moodboard · " + p.name,
+    );
   } catch (error) {
     toast(error.message);
   } finally {
     button.disabled = false;
-    button.textContent = "Télécharger le PDF";
+    button.textContent = "Prévisualiser le PDF";
   }
 }
 const connectedRender = render;

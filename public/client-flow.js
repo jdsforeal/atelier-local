@@ -13,7 +13,7 @@ function clientBoardMarkup(p) {
   const versions = (db.clientBoards || []).filter((x) => x.project === p.id);
   const snapshot = versions.find((x) => x.id === clientBoardVersion);
   const board = snapshot || flowSnapshot(db, p, p.clientBoardPrices === true);
-  return `<section class="client-board-workspace"><div class="section-head"><div><div class="eyebrow">SÉLECTION CLIENT · LOOKS ET ALTERNATIVES</div><h2>${snapshot ? "Version conservée" : "Planche en préparation"}</h2><p>Composez pendant les demandes de disponibilité. Les décisions client sont enregistrées séparément des réservations.</p></div><div class="actions"><button data-flow-freeze ${!board.looks.some((l) => l.pieces.length) || snapshot ? "disabled" : ""}>Conserver une nouvelle version</button><button data-flow-pdf ${!board.looks.some((l) => l.pieces.length) ? "disabled" : ""}>Télécharger la sélection PDF</button><button data-tab="messages">Demandes fournisseurs</button></div></div>
+  return `<section class="client-board-workspace"><div class="section-head"><div><div class="eyebrow">SÉLECTION CLIENT · LOOKS ET ALTERNATIVES</div><h2>${snapshot ? "Version conservée" : "Planche en préparation"}</h2><p>Composez pendant les demandes de disponibilité. Les décisions client sont enregistrées séparément des réservations.</p></div><div class="actions"><button data-flow-freeze ${!board.looks.some((l) => l.pieces.length) || snapshot ? "disabled" : ""}>Conserver une nouvelle version</button><button data-flow-pdf ${!board.looks.some((l) => l.pieces.length) ? "disabled" : ""}>Prévisualiser la sélection PDF</button><button data-tab="messages">Demandes fournisseurs</button></div></div>
   <div class="toolbar"><select id="client-board-version" aria-label="Version de la sélection client"><option value="">Préparation en direct</option>${versions
     .slice()
     .reverse()
@@ -316,7 +316,7 @@ document.addEventListener("click", async (event) => {
       await exportClientSelection(v);
       if (!clientBoardVersion) {
         v.project = p.id;
-        v.status = "PDF exporté";
+        v.status = "Prévisualisée";
         (db.clientBoards ??= []).push(v);
         clientBoardVersion = v.id;
         save();
@@ -381,7 +381,7 @@ render = function () {
       .filter((v) => v.project === p.id && v.clientRecord)
       .map(
         (v) =>
-          `<p>Version ${v.version || 1} · ${esc(v.clientRecord)} · ${date(v.savedAt.slice(0, 10))} · ${euro(v.lines.reduce((n, l) => n + l.qty * l.rate, 0))} HT <button data-flow-old-quote="${esc(v.archiveId)}">Exporter cette version PDF</button></p>`,
+          `<p>Version ${v.version || 1} · ${esc(v.clientRecord)} · ${date(v.savedAt.slice(0, 10))} · ${euro(v.lines.reduce((n, l) => n + l.qty * l.rate, 0))} HT <button data-flow-old-quote="${esc(v.archiveId)}">Prévisualiser cette version</button></p>`,
       )
       .join("")}</section>`,
   );
@@ -424,13 +424,11 @@ document.addEventListener("click", async (event) => {
         (x) => x.archiveId === b.dataset.flowOldQuote,
       );
       const pages = quotePdfPages(project(), q, db.quoteSettings || {});
-      const blob = moodboardPdf(pages),
-        url = URL.createObjectURL(blob),
-        a = document.createElement("a");
-      a.href = url;
-      a.download = "Atelier-devis-version-" + q.version + ".pdf";
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      previewDocument(
+        pages,
+        "Atelier-devis-version-" + q.version + ".pdf",
+        "Devis conservé · version " + q.version,
+      );
     } catch (error) {
       toast(error.message);
     }
