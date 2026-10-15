@@ -485,7 +485,8 @@ document.addEventListener("click", (e) => {
     history.replaceState(
       null,
       "",
-      location.pathname + (demoMode ? "?mode=simulation&v=0.5" : "?v=0.5"),
+      location.pathname +
+        (demoMode ? "?mode=simulation&v=0.8.1" : "?mode=personal&v=0.8.1"),
     );
     localStorage.setItem("atelier-demo-active", String(demoMode));
     try {
@@ -495,6 +496,7 @@ document.addEventListener("click", (e) => {
     } catch {
       db = demoMode ? atelierDemo() : personalDB;
     }
+    if (!demoMode) db = preparePersonalWorkspace(db);
     normalize();
     prepareLookChoices(db, atelierCatalog);
     pid = db.projects[0]?.id;
@@ -532,7 +534,7 @@ document.addEventListener("click", (e) => {
           "Restaurer la sauvegarde",
           "<p>La sauvegarde sélectionnée remplacera les données de cet espace. Exportez les données actuelles avant de confirmer.</p>",
           () => {
-            db = next;
+            db = demoMode ? next : preparePersonalWorkspace(next, true);
             normalize();
             prepareLookChoices(db, atelierCatalog);
             pid = db.projects[0]?.id;

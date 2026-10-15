@@ -35,3 +35,9 @@ Actualités retirées de la navigation ; anciens favoris accessibles depuis Rés
 Import : proposition locale conservatrice de cadrage, comparaison avec l’original, réglages et validation par lot. Ce n’est pas une reconnaissance sémantique du vêtement ; les captures avec plusieurs produits ou du texte exigent un contrôle. Originaux compressés conservés avec les données, restaurables. Le stockage reste limité par le navigateur.
 
 Création de projet : modèles par type, nom proposé, jusqu’à cinq looks, besoins et jalons cochables ; échéances proposées autour de la date principale. Tous les choix restent modifiables. Aucun envoi ou rappel e-mail autonome connecté.
+
+## Version 0.8.1 — Espace personnel sans exemples
+
+Un nouvel espace personnel démarre vide. Les anciens projets, contacts, pièces et tâches d’exemple identifiables sont retirés des espaces existants, avec leurs liens fictifs. Les saisies réelles sont conservées ; celles liées à un projet d’exemple retiré sont détachées, sans suppression. Une copie des éléments retirés permet d’annuler le nettoyage depuis l’interface. La simulation reste isolée. Le répertoire de sources réelles est disponible sans peupler automatiquement le carnet personnel.
+
+Lien à utiliser pour travailler : ?mode=personal&v=0.8.1. Les données étant propres à chaque navigateur, la migration s’applique à l’ouverture de cet espace sur chaque appareil.

@@ -1,5 +1,5 @@
 /** Étape 1 : fiches fournisseurs, contacts liés et préparation de demandes groupées. */
-let networkTab = "directory",
+let networkTab = demoMode ? "directory" : "contacts",
   supplierSearch = "",
   supplierCountry = "Tous",
   supplierType = "Tous",

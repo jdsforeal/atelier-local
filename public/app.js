@@ -1,5 +1,30 @@
+/** Seuls les anciens exemples identifiables sont retirés ; les saisies personnelles restent présentes. */
+function preparePersonalWorkspace(value, force = false) {
+  if (value.personalDataVersion === 1 && !force) return value;
+  const result = cleanPersonalRecords(value, legacySeed);
+  const next = result.database;
+  next.personalDataVersion = 1;
+  if (result.count)
+    next.personalCleanupBackup = {
+      removed: result.removed,
+      detached: result.detached,
+      date: new Date().toISOString(),
+      count: result.count,
+    };
+  try {
+    localStorage.setItem(KEY, JSON.stringify(next));
+    return next;
+  } catch {
+    return {
+      ...value,
+      personalCleanupWarning:
+        "Le nettoyage n’a pas été enregistré : exportez vos données pour libérer du stockage avant de réessayer.",
+    };
+  }
+}
+
 const KEY = "atelier-studio-v1";
-const seed = {
+const legacySeed = {
   projects: [
     {
       id: "p1",
@@ -163,12 +188,14 @@ const seed = {
   ],
   news: [],
 };
+const seed = emptyPersonalWorkspace();
 let db;
 try {
   db = JSON.parse(localStorage.getItem(KEY)) || structuredClone(seed);
 } catch {
   db = structuredClone(seed);
 }
+db = preparePersonalWorkspace(db);
 let view = "home",
   pid = "p1",
   tab = "overview",
@@ -217,7 +244,7 @@ function art(type = 0, tone = "sage") {
     `<path d="M86 34 164 34 170 88 160 202 127 202 122 108 113 202 78 202 79 85Z" fill="#eee8dc"/><path d="m122 50 0 58M85 56h76" stroke="#beb5a4" fill="none" stroke-width="2"/>`,
     `<circle cx="94" cy="79" r="11" fill="#e3dfcb"/><path d="M94 94c-45 55-33 87 0 80 33-7 27-46 0-80Z" fill="none" stroke="#d7d4c1" stroke-width="14"/><circle cx="163" cy="79" r="11" fill="#e3dfcb"/><path d="M163 94c-45 55-33 87 0 80 33-7 27-46 0-80Z" fill="none" stroke="#d7d4c1" stroke-width="14"/>`,
   ];
-  return `<div class="art ${tone}" role="img" aria-label="Illustration de référence, pièce fictive"><svg viewBox="0 0 250 230" aria-hidden="true">${shapes[type % 3]}</svg></div>`;
+  return `<div class="art ${tone}" role="img" aria-label="Illustration décorative de vêtement"><svg viewBox="0 0 250 230" aria-hidden="true">${shapes[type % 3]}</svg></div>`;
 }
 function title(h, p, action = "", label = "") {
   return `<div class="title-row"><div><div class="eyebrow">VOTRE STUDIO, L’ESPRIT LIBRE</div><h1>${esc(h)}</h1><p class="subtitle">${esc(p)}</p></div>${action ? `<button class="primary" data-action="${action}">＋ ${label}</button>` : ""}</div>`;
