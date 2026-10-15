@@ -14,6 +14,7 @@ await pg.exec(
 await pg.exec(
   await readFile("supabase/migrations/202610150002_private_images.sql", "utf8"),
 );
+await pg.exec(await readFile("supabase/migrations/202610150003_studio_settings.sql", "utf8"));
 const owner = "00000000-0000-0000-0000-000000000001",
   assistant = "00000000-0000-0000-0000-000000000002",
   stranger = "00000000-0000-0000-0000-000000000003",
@@ -217,4 +218,10 @@ await assert.rejects(
 console.log(
   "PostgreSQL : projets privés, budget isolé, invitations liées à une adresse vérifiée, délégation bornée, révocation et conflits OK.",
 );
+await as(owner, "select public.atelier_rename_studio($1,'du côté de l’atelier')", [studio]);
+assert.equal(scalar(await as(owner,'select name from public.atelier_studios where id=$1',[studio])), 'du côté de l’atelier');
+await assert.rejects(as(assistant,"select public.atelier_rename_studio($1,'Intrusion')",[studio]),/réservée/);
+await assert.rejects(as(stranger,"select public.atelier_rename_studio($1,'Intrusion')",[studio]),/réservée/);
+await assert.rejects(as(owner,"select public.atelier_rename_studio($1,' ')",[studio]),/caractères/);
+console.log('Nom du studio : propriétaire seule, nom valide et refus des autres comptes OK.');
 await pg.close();

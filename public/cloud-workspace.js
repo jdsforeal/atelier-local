@@ -405,8 +405,9 @@ function cloudReadPermissions(form) {
   return values;
 }
 async function cloudTeam() {
+  if (cloudState.pending) await cloudFlush();
   const meta = cloudState.projects.find((x) => x.external_id === pid);
-  if (!meta) return;
+  if (!meta) return toast("Le projet doit être synchronisé avant de gérer ses accès.");
   const members = await cloudResult(
     cloudState.client
       .from("atelier_members")
@@ -426,7 +427,7 @@ async function cloudTeam() {
     : [];
   modal(
     "Accès et équipe",
-    `<p><strong>Projet privé</strong> · Copier son adresse ne donne aucun accès.</p><p>Responsable : ${meta.creator_id === cloudState.user.id ? esc(cloudState.user.email) : "créateur du projet"}</p>${members.map((m) => `<div class="panel"><strong>${esc(m.email)}</strong><p>${m.can_edit ? "Contribution" : "Consultation"}${m.budget_read ? " · budget partagé" : ""}${m.can_invite ? " · peut inviter" : ""}</p>${rights.manager ? `<button type="button" data-cloud-member="${esc(m.user_id)}">Modifier les droits</button><button type="button" data-cloud-revoke="${esc(m.user_id)}">Retirer l’accès</button>` : ""}</div>`).join("")}${invitations.map((i) => `<p>${esc(i.email)} <button type="button" data-cloud-copy-invite="${esc(i.id)}">Copier le lien</button> · ${new Date(i.expires_at) > new Date() ? "En attente" : "Expirée"} ${rights.manager ? `<button type="button" data-cloud-cancel-invite="${esc(i.id)}">Annuler l’invitation</button>` : ""}</p>`).join("")}${rights.can_invite ? '<button type="button" class="primary" data-cloud-invite>Inviter une assistante</button>' : '<p class="note">Seul le responsable ou une personne autorisée peut inviter.</p>'}<p class="note">Un accès retiré bloque les prochaines requêtes ; les fichiers déjà téléchargés ne peuvent pas être effacés à distance.</p>`,
+    `<p><strong>Projet privé</strong> · Copier son adresse ne donne aucun accès.</p><p>Responsable : ${meta.creator_id === cloudState.user.id ? esc(cloudState.user.email) : "créateur du projet"}</p>${members.map((m) => `<div class="panel"><strong>${esc(m.email)}</strong><p>${m.can_edit ? "Contribution" : "Consultation"}${m.budget_read ? " · budget partagé" : ""}${m.can_invite ? " · peut inviter" : ""}</p>${rights.manager ? `<button type="button" data-cloud-member="${esc(m.user_id)}">Modifier les droits</button><button type="button" data-cloud-revoke="${esc(m.user_id)}">Retirer l’accès</button>` : ""}</div>`).join("")}${invitations.map((i) => `<p>${esc(i.email)} <button type="button" data-cloud-copy-invite="${esc(i.id)}">Copier le lien</button> · ${new Date(i.expires_at) > new Date() ? "En attente" : "Expirée"} ${rights.manager ? `<button type="button" data-cloud-cancel-invite="${esc(i.id)}">Annuler l’invitation</button>` : ""}</p>`).join("")}${rights.can_invite ? '<button type="button" class="primary" data-cloud-invite>Inviter un·e assistant·e</button>' : '<p class="note">Seul le responsable ou une personne autorisée peut inviter.</p>'}<p class="note">Un accès retiré bloque les prochaines requêtes ; les fichiers déjà téléchargés ne peuvent pas être effacés à distance.</p>`,
     () => {},
   );
   $('#form > button[type="submit"]').hidden = true;
@@ -588,10 +589,12 @@ document.addEventListener("click", async (event) => {
       }
     }
     if (b.hasAttribute("data-cloud-team")) await cloudTeam();
-    if (b.hasAttribute("data-cloud-invite"))
+    if (b.hasAttribute("data-cloud-invite")) {
+      if (cloudState.pending) await cloudFlush();
+      if (!cloudState.projects.some(p => p.external_id === pid)) throw Error("Le projet doit être synchronisé avant de créer une invitation.");
       modal(
         "Inviter dans ce projet",
-        field("email", "Adresse Google de l’assistante", "email") +
+        field("email", "Adresse Google de la personne invitée", "email") +
           cloudPermissionFields({ can_edit: true }) +
           '<p class="note">Invitation valable sept jours, liée à cette adresse vérifiée. Aucun e-mail automatique : vous pourrez copier un lien à lui transmettre.</p>',
         async (d, f) => {
@@ -604,10 +607,12 @@ document.addEventListener("click", async (event) => {
             }),
           );
           toast(
-            "Invitation créée. La personne la retrouvera après connexion avec cette adresse.",
+            "Invitation créée. Copiez le lien à transmettre à la personne invitée.",
           );
+          setTimeout(() => cloudTeam().catch(error => toast(error.message)), 0);
         },
       );
+    }
     if (b.dataset.cloudMember) {
       const p = cloudState.projects.find((p) => p.external_id === pid);
       const members = await cloudResult(
@@ -753,10 +758,6 @@ async function cloudStart() {
       },
     },
   );
-  if (demoMode) {
-    render();
-    return;
-  }
   cloudState.loading = true;
   cloudRenderGate();
   try {
@@ -769,11 +770,13 @@ async function cloudStart() {
       const result = await cloudState.client.auth.getUser();
       if (result.error) throw result.error;
       cloudState.user = result.data.user;
-      await cloudRefreshAccount();
+      if (!demoMode) await cloudRefreshAccount();
     }
   } catch (error) {
-    cloudState.error = "Connexion indisponible : " + error.message;
-    toast(cloudState.error);
+    if (error.name !== "AuthSessionMissingError") {
+      cloudState.error = "Connexion indisponible : " + error.message;
+      toast(cloudState.error);
+    }
   } finally {
     cloudState.loading = false;
     render();
@@ -795,7 +798,8 @@ async function cloudStart() {
           const { data, error } = await cloudState.client.auth.getUser();
           if (error) throw error;
           cloudState.user = data.user;
-          await cloudRefreshAccount();
+          if (!demoMode) await cloudRefreshAccount();
+          else render();
         } catch (error) {
           toast(error.message);
         }
