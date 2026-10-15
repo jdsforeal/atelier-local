@@ -89,3 +89,14 @@ Le site reste autonome pour les projets et brouillons. Le service ne reçoit que
 Limites inchangées : données locales au navigateur, sauvegardes nécessaires ; pas de synchronisation partagée, pas de Gmail/Qonto actifs, aucune dépense d’hébergement. Les réponses fournisseur et client sont saisies manuellement : aucun mail n’est interprété comme confirmation de disponibilité.
 
 Validation : suite complète, nouveaux tests métier (options exclusives, partage, budget, versions, validation, reports, cautions), essais dans le navigateur en simulation et PDF de contrôle sur trois pages.
+
+## Pilote privé 0.12
+
+- `supabase/migrations/` : tables, RPC et RLS ; `SETUP.sql` assemble les migrations pour un projet neuf.
+- `public/cloud-config.js` : URL et clé publishable publiques uniquement, désactivées par défaut.
+- `cloud-model.js` : projections créatives/financières/échanges et identifiants isolés par projet à la lecture ; le carnet privé ne peut pas être remplacé par une copie partagée.
+- `cloud-storage.js` : images privées immuables par empreinte, références durables et URLs signées temporaires ; copie dans le bon périmètre lors de la réutilisation.
+- `cloud-workspace.js` : connexion Google, studio, synchronisation, accès/équipe et import local explicite. Les autorisations effectives sont côté base, pas dans les boutons.
+- `public/vendor/supabase.js` : SDK officiel compilé depuis les versions figées. CI installe les dépendances de test ; aucun secret dans le dépôt.
+
+Le pilote utilise des documents JSON séparés par projet et par niveau de confidentialité, sous protection PostgreSQL. Ce choix conserve les parcours existants sans une réécriture totale ; les révisions empêchent l’écrasement silencieux mais ne fusionnent pas automatiquement des modifications simultanées. Pour une forte concurrence ou un futur SaaS, une normalisation plus fine et un mécanisme de sauvegarde complet seront nécessaires. Les tests locaux ne remplacent pas la recette réelle Google/Supabase à deux comptes avant activation.

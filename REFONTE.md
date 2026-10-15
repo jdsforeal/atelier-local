@@ -94,3 +94,9 @@ Vue d’ensemble → Moodboard → Looks & besoins → Sélection client → Dem
 ## Version 0.11.4 — réseau complet de simulation
 
 Migration du mode simulation uniquement, sans réinitialiser ses projets : 518 contacts fictifs pour 222 structures dans le scénario de départ, deux ou trois interlocuteurs par marque/fournisseur. Les contacts ajoutés dans un navigateur sont conservés et associés à leur structure. Les pièces proposent un interlocuteur de leur fournisseur et les anciennes demandes fictives multi-fournisseurs sont séparées. Migration idempotente ; anciens envois conservés, brouillons à relire. Adresses réservées `.invalid` ; sélection et validation de brouillons permises seulement en simulation, envoi toujours désactivé. Aucun enrichissement fictif dans l’espace personnel. Suite de tests complète et vérification navigateur d’une fiche avec deux contacts liés.
+
+## Version 0.12 — socle du pilote connecté (activation en attente)
+
+Compte Google via Supabase Auth PKCE, studios privés, accès projet, invitations avec adresse vérifiée, délégation limitée et révocation. Documents créatifs / financiers / demandes séparés par droits PostgreSQL, images privées, révisions concurrentes et sauvegardes atomiques par projet. Carnet global réservé à la propriétaire, import explicite depuis les données locales, simulation séparée. Interface d’activation désactivée tant que le projet Supabase et le fournisseur Google ne sont pas configurés.
+
+Tests : PostgreSQL local réel via PGlite avec identités distinctes, tentatives d’escalade, images privées, rejet d’invitation par un autre compte, révocation et conflit ; tests des projections et de la synchronisation ; suite existante. Vérification navigateur de l’entrée de connexion non activée. Aucune connexion Google réelle, aucun test sur le projet distant à ce stade. Voir `supabase/README.md` pour l’installation, la recette et les limites. Pas de Gmail partagé/Qonto/IA actifs ; aucune dépense souscrite.
