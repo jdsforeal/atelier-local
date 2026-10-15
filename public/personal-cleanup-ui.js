@@ -5,7 +5,7 @@ render = function () {
   if (badge?.firstChild)
     badge.firstChild.textContent = badge.firstChild.textContent.replace(
       /^0\.8 /,
-      "0.8.2 ",
+      "0.9.0 ",
     );
   if (demoMode) return;
   const note = [...document.querySelectorAll("p.note")].find((el) =>
@@ -37,7 +37,10 @@ document.addEventListener("click", (event) => {
     db = preparePersonalWorkspace(db, true);
     normalize();
     render();
-    toast(db.personalCleanupWarning || "Données fictives retirées. Vos saisies personnelles sont conservées.");
+    toast(
+      db.personalCleanupWarning ||
+        "Données fictives retirées. Vos saisies personnelles sont conservées.",
+    );
     return;
   }
   if (!event.target.closest("[data-undo-personal-cleanup]")) return;

@@ -53,3 +53,14 @@ L’export JSON contient les données complètes. La synchronisation entre appar
 ## Vérifier
 
 `npm run check` vérifie la syntaxe de tous les fichiers. `npm test` exécute les contrôles métier lisibles dans `tests/look-choices.test.cjs` : sélection exclusive, superposition, historique, budget indépendant, sauvegarde et protection des archives.
+
+### Messagerie 0.9.0
+
+- `public/mail-config.js` : URL publique du service privé, vide tant qu'il n'est pas activé.
+- `public/mail-model.js` : regroupement, signature des données et validation, fonctions pures testables.
+- `public/mail-console.js` : écran des demandes groupées, sélection, validation et connexion au service.
+- `mail-service/core.mjs` : file, états, transport injecté pour les tests, relance unique et détection d'arrivée dans le fil.
+- `mail-service/server.mjs` : OAuth Google, sessions par compte, chiffrement du stockage et boucle de suivi hébergée.
+- `mail-service/README.md` : activation, limites du pilote et vérification obligatoire avec comptes test.
+
+Le site reste autonome pour les projets et brouillons. Le service ne reçoit que les messages explicitement validés pour envoi. Aucune clé Google dans `public/` ni dans GitHub. Ce service n'est pas déployé par GitHub Pages.

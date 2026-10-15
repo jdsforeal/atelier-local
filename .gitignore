@@ -8,3 +8,7 @@ node_modules/
 *.log
 *backup*.json
 *sauvegarde*.json
+
+# Stockage privé chiffré du service de messagerie
+*.enc
+*.enc.tmp

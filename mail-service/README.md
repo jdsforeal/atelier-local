@@ -1,0 +1,53 @@
+# Messagerie Atelier — activation par le propriétaire
+
+État de la version 0.9.0 : interface disponible ; service privé écrit et testé avec des réponses Gmail simulées. **Aucun compte Google connecté, aucun service hébergé, aucun envoi réel testé.** Ne pas présenter ce dossier comme un service déjà actif.
+
+## Ce que voit une styliste
+
+1. Sa signature se règle une fois. Les pièces ouvertes sont regroupées par fournisseur et les contacts liés sont proposés.
+2. Elle sélectionne les fournisseurs, choisit les destinataires si nécessaire, lit les textes et valide la sélection.
+3. Elle peut activer une relance à J+3 pour la sélection, changer les délais ou désactiver une relance individuellement.
+4. « Envoyer les messages validés » ouvre une confirmation du lot : chaque destinataire reçoit son message individuel.
+5. Une confirmation Gmail passe la demande en attente de réponse. Un message entrant dans le même fil arrête la relance. Une absence automatique arrête également la relance : la styliste décide de la suite.
+
+Chaque utilisatrice autorise son compte via « Connecter Gmail ». **Elle n’a pas à créer de projet Google Cloud.** Le client OAuth est commun à Atelier ; le secret et les autorisations hors ligne sont privés côté serveur.
+
+## Configuration unique Google
+
+Créer un projet Google Cloud pour Atelier et activer Gmail API. Configurer une application OAuth Web, l’écran de consentement et les comptes test de Jonathan et de la styliste. Déclarer l’URL de redirection exacte `https://URL-DU-SERVICE/oauth/callback`. Les permissions demandées sont `gmail.send` et `gmail.readonly` ; aucune suppression ni modification de messages.
+
+Conserver l’identifiant client et le secret dans les variables privées de l’hébergeur, jamais dans GitHub, `public/`, les sauvegardes du navigateur ou ce document. Une application externe utilisant ces permissions peut nécessiter la vérification Google, et selon son usage une évaluation de sécurité. Le mode de test peut limiter la durée des autorisations hors ligne : prévoir un renouvellement de connexion. Une ouverture publique nécessite également une politique de confidentialité, une procédure de suppression des comptes et une revue de sécurité ; cette version prépare un pilote privé.
+
+Documentation : https://developers.google.com/identity/protocols/oauth2/web-server et https://developers.google.com/workspace/gmail/api/auth/scopes
+
+## Hébergement proposé : service Node toujours actif avec disque persistant
+
+Le site public reste sur GitHub Pages. Seul le service Gmail nécessite un hébergement supplémentaire. Un service gratuit qui se met en veille n’exécute pas la boucle de suivi lorsque personne ne consulte l’application.
+
+Une configuration Render est préparée dans `render.yaml` (non déployée). Choisir un service **Starter**, un disque privé de 1 Go et une région européenne. Le propriétaire doit confirmer le tarif dans Render avant toute souscription. Ordre de grandeur vérifié le 15 octobre 2026 : 7 $/mois de calcul + 0,25 $/mois de disque, hors taxes et éventuels dépassements. Sources : https://render.com/articles/render-vs-railway et https://render.com/pricing
+
+Configurer les variables décrites dans `.env.example` :
+
+- `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` : secrets de la configuration OAuth.
+- `MAIL_PUBLIC_URL` : URL HTTPS réelle du service.
+- `MAIL_ALLOWED_ORIGIN` : `https://jdsforeal.github.io` pour le site actuel. Cette autorisation concerne l’origine, donc tous les chemins de ce domaine GitHub Pages ; l’authentification personnelle reste obligatoire pour chaque requête de données.
+- `MAIL_ENCRYPTION_KEY` : clé base64 de 32 octets générée une fois et conservée dans un coffre distinct du disque et de ses sauvegardes.
+- `MAIL_DATA_PATH` : `/data/atelier-mail.enc`, uniquement sur un volume persistant privé.
+
+Le service natif Render démarre avec `node mail-service/server.mjs`. Node 22 ou supérieur requis. Une seule instance : le stockage chiffré de ce pilote n’est pas une base distribuée. La boucle s’exécute chaque minute et consulte uniquement les fils des demandes enregistrées. Sa fréquence effective dépend du nombre de demandes et de la disponibilité de Gmail. La session de l’écran dure 12 heures, mais le suivi autorisé continue côté serveur.
+
+Après déploiement, renseigner **uniquement l’URL publique** dans `public/mail-config.js` et republier le site. Aucune donnée secrète ne va dans ce fichier.
+
+## Données, annulation et incidents
+
+Le fichier serveur est chiffré en AES-256-GCM. Il contient les autorisations de connexion, les demandes explicitement transmises et leur journal, séparés par compte Gmail. Il ne contient pas l’ensemble des projets, images ou contacts de l’application. Les jetons Gmail ne sont pas retournés au navigateur ; une session Atelier distincte est conservée dans l’onglet. Les données métier restent locales et ne sont pas synchronisées entre appareils.
+
+Le serveur refuse un destinataire fictif, une injection d’en-tête et un message non complété. Un identifiant de demande déjà présent n’est jamais envoyé une deuxième fois. L’état « Envoi en cours » est enregistré avant chaque appel Gmail. Si le résultat est inconnu, le traitement passe en « Envoi à vérifier » et ne réessaie pas automatiquement. Vérifier Gmail manuellement dans ce cas. Une panne de lecture suspend la relance. Une seule relance par demande. Une réponse détectée n’est pas assimilée à une confirmation de disponibilité des vêtements.
+
+L’annulation ou la clôture d’un projet est transmise au service lors de la prochaine synchronisation de l’écran connecté. Si l’écran n’est pas connecté, le service ne peut pas connaître un changement conservé uniquement dans le navigateur. Utiliser « Arrêter la relance » avant de quitter le site dans ce cas. « Déconnecter et suspendre » arrête le compte côté serveur ; une opération déjà transmise à Gmail ne peut pas être rappelée. Une reconnexion réactive le suivi des demandes précédemment autorisées.
+
+Le contrôle d’une réponse juste avant une relance réduit les courses mais ne peut pas empêcher une réponse d’arriver au même instant que l’envoi. Les réponses hors du fil ne sont pas rapprochées automatiquement.
+
+## Vérification obligatoire avant activation réelle
+
+Les tests automatiques utilisent un faux transport Gmail et n’envoient rien. Avant d’activer le pilote : connecter les deux comptes test, envoyer uniquement vers une adresse de test contrôlée, vérifier le message reçu, répondre, vérifier l’arrêt de relance, puis tester un délai et un redémarrage du service. Vérifier également deux comptes isolés, le renouvellement des autorisations, les sauvegardes chiffrées et leur restauration. Pour une ouverture publique, ajouter des limites par compte, une rétention des données, la suppression/révocation des comptes et un stockage adapté à la charge. Ne pas augmenter les destinataires ou lancer des campagnes pendant ces tests.

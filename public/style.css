@@ -1405,8 +1405,352 @@ textarea:focus {
 }
 
 /* Planches de travail, distinctes du document PDF exporté. */
-.editorial-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;background:#f1efe7;padding:24px;border-radius:18px}.editorial-board figure{margin:0;min-width:0;background:#fff}.editorial-board figure:first-child{grid-row:span 2}.editorial-board img{width:100%;height:310px;object-fit:contain}.editorial-board figure:first-child img{height:620px}.editorial-board figcaption{padding:16px}.editorial-board figcaption p{overflow-wrap:anywhere}.editorial-board.grid-layout figure:first-child{grid-row:auto}.editorial-board.grid-layout figure:first-child img{height:310px}@media(max-width:700px){.editorial-board{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px;gap:12px}.editorial-board img,.editorial-board figure:first-child img{height:220px}.editorial-board figure:first-child{grid-row:auto;grid-column:span 2}}
+.editorial-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  background: #f1efe7;
+  padding: 24px;
+  border-radius: 18px;
+}
+.editorial-board figure {
+  margin: 0;
+  min-width: 0;
+  background: #fff;
+}
+.editorial-board figure:first-child {
+  grid-row: span 2;
+}
+.editorial-board img {
+  width: 100%;
+  height: 310px;
+  object-fit: contain;
+}
+.editorial-board figure:first-child img {
+  height: 620px;
+}
+.editorial-board figcaption {
+  padding: 16px;
+}
+.editorial-board figcaption p {
+  overflow-wrap: anywhere;
+}
+.editorial-board.grid-layout figure:first-child {
+  grid-row: auto;
+}
+.editorial-board.grid-layout figure:first-child img {
+  height: 310px;
+}
+@media (max-width: 700px) {
+  .editorial-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px;
+    gap: 12px;
+  }
+  .editorial-board img,
+  .editorial-board figure:first-child img {
+    height: 220px;
+  }
+  .editorial-board figure:first-child {
+    grid-row: auto;
+    grid-column: span 2;
+  }
+}
 
-.crop-dialog{width:min(1050px,94vw);max-width:1050px;max-height:90vh;overflow:auto;padding:28px;border:0;border-radius:20px;background:#faf9f5}.crop-batch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.crop-comparison{display:grid;grid-template-columns:1fr 1fr;gap:12px}.crop-comparison img,.crop-comparison canvas{width:100%;height:230px;object-fit:contain;background:#eee}.crop-batch input[type=range]{width:100%}.piece-row:has([data-studio-check]){grid-template-columns:26px 80px minmax(160px,1fr) minmax(200px,auto)}@media(max-width:700px){.crop-batch{grid-template-columns:1fr}.piece-row:has([data-studio-check]){grid-template-columns:25px 65px 1fr}.piece-row:has([data-studio-check])>.actions{grid-column:2/-1}}
+.crop-dialog {
+  width: min(1050px, 94vw);
+  max-width: 1050px;
+  max-height: 90vh;
+  overflow: auto;
+  padding: 28px;
+  border: 0;
+  border-radius: 20px;
+  background: #faf9f5;
+}
+.crop-batch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.crop-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.crop-comparison img,
+.crop-comparison canvas {
+  width: 100%;
+  height: 230px;
+  object-fit: contain;
+  background: #eee;
+}
+.crop-batch input[type="range"] {
+  width: 100%;
+}
+.piece-row:has([data-studio-check]) {
+  grid-template-columns: 26px 80px minmax(160px, 1fr) minmax(200px, auto);
+}
+@media (max-width: 700px) {
+  .crop-batch {
+    grid-template-columns: 1fr;
+  }
+  .piece-row:has([data-studio-check]) {
+    grid-template-columns: 25px 65px 1fr;
+  }
+  .piece-row:has([data-studio-check]) > .actions {
+    grid-column: 2/-1;
+  }
+}
 
-.crop-batch .panel>label{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px}.crop-batch input[type=range]{padding:0;height:24px;margin:0;flex:1}.crop-batch input[type=checkbox],#fields details input[type=checkbox]{width:auto;margin-right:8px}.crop-dialog>.toolbar:last-child{position:sticky;bottom:-28px;background:#faf9f5;padding:16px 0;margin-bottom:0;border-top:1px solid #deded6}#fields details{padding:12px 0}#fields details label{display:flex;align-items:center;gap:8px;margin:10px 0}
+.crop-batch .panel > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.crop-batch input[type="range"] {
+  padding: 0;
+  height: 24px;
+  margin: 0;
+  flex: 1;
+}
+.crop-batch input[type="checkbox"],
+#fields details input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+}
+.crop-dialog > .toolbar:last-child {
+  position: sticky;
+  bottom: -28px;
+  background: #faf9f5;
+  padding: 16px 0;
+  margin-bottom: 0;
+  border-top: 1px solid #deded6;
+}
+#fields details {
+  padding: 12px 0;
+}
+#fields details label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+/* Boîte de demandes : lecture des fournisseurs et actions groupées. */
+.mail-connection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  background: #ebece3;
+  border-radius: 14px;
+  margin: 18px 0;
+}
+.mail-connection p {
+  margin: 6px 0;
+  font-size: 13px;
+  max-width: 780px;
+  line-height: 1.6;
+}
+.mail-batch {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  align-items: center;
+  background: #faf9f5;
+  padding: 18px;
+  border: 1px solid #d9ddcf;
+  border-radius: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 18px 0;
+}
+.mail-batch small {
+  display: block;
+  max-width: 560px;
+  margin-top: 5px;
+  color: #707569;
+  line-height: 1.5;
+}
+.mail-row {
+  padding: 22px;
+  border: 1px solid #deded5;
+  background: #fff;
+  border-radius: 14px;
+  margin: 14px 0;
+}
+.mail-approved {
+  border-left: 4px solid #687c59;
+}
+.mail-row-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.mail-state {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 30px;
+  background: #f0f0e9;
+  white-space: nowrap;
+}
+.mail-tick {
+  display: flex !important;
+  align-items: center;
+  gap: 9px;
+  margin: 6px 0 !important;
+}
+.mail-tick input[type="checkbox"] {
+  width: 17px !important;
+  height: 17px;
+  flex: none;
+  margin: 0;
+  accent-color: #53644a;
+}
+.mail-row-grid {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(230px, 1.3fr) minmax(
+      180px,
+      0.8fr
+    );
+  gap: 24px;
+}
+.mail-row label {
+  font-size: 13px;
+}
+.mail-row select,
+.mail-row input,
+.mail-row textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+.mail-pieces,
+.mail-excerpt {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #62695f;
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+.mail-row-actions small {
+  display: block;
+  color: #946244;
+  line-height: 1.5;
+}
+.mail-editor {
+  border-top: 1px solid #eeeee7;
+  margin-top: 18px;
+  padding-top: 14px;
+}
+.mail-editor summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: #526447;
+}
+.mail-editor textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+.mail-error {
+  color: #9b493c;
+  font-size: 13px;
+}
+.mail-filters {
+  flex-wrap: wrap;
+}
+.mail-row-actions p,
+.mail-row-actions a {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.mail-row small {
+  font-size: 12px;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+@media (max-width: 1000px) {
+  .mail-row-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .mail-row-actions {
+    grid-column: 1/-1;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .mail-batch {
+    position: static;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media (max-width: 650px) {
+  .mail-connection,
+  .mail-row-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .mail-row-grid {
+    grid-template-columns: 1fr;
+  }
+  .mail-row-actions {
+    display: block;
+  }
+  .mail-row {
+    padding: 16px;
+  }
+  .mail-state {
+    white-space: normal;
+  }
+}
+
+/* Vue condensée : les détails restent accessibles sans encombrer la liste. */
+.mail-row {
+  padding: 16px 20px;
+}
+.mail-row-head {
+  margin-bottom: 10px;
+}
+.mail-pieces {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mail-excerpt {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mail-row-grid {
+  gap: 20px;
+}
+.mail-batch .actions {
+  gap: 7px;
+}
+.mail-batch button {
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.mail-batch {
+  padding: 14px;
+}
+.mail-batch > div:first-child {
+  min-width: 180px;
+}
+.mail-batch small {
+  font-size: 11px;
+}
+.mail-editor {
+  margin-top: 12px;
+  padding-top: 10px;
+}

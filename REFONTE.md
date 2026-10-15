@@ -41,3 +41,9 @@ Création de projet : modèles par type, nom proposé, jusqu’à cinq looks, be
 Un nouvel espace personnel démarre vide. Les anciens projets, contacts, pièces et tâches d’exemple identifiables sont retirés des espaces existants, avec leurs liens fictifs. Les saisies réelles sont conservées ; celles liées à un projet d’exemple retiré sont détachées, sans suppression. Une copie des éléments retirés permet d’annuler le nettoyage depuis l’interface. La simulation reste isolée. Le répertoire de sources réelles est disponible sans peupler automatiquement le carnet personnel.
 
 Lien à utiliser pour travailler : ?mode=personal&v=0.8.1. Les données étant propres à chaque navigateur, la migration s’applique à l’ouverture de cet espace sur chaque appareil.
+
+## 0.9.0 — Console de demandes groupées et service Gmail à activer
+
+Une ligne par fournisseur : destinataire lié, pièces, aperçu, validation, relance et délai. Sélection et validation en lot, signature commune, ajout de contact depuis une demande, relecture si les pièces ou le brief changent. Les textes se modifient directement dans la liste. L'envoi demande confirmation du lot et reste indisponible tant que le service Gmail n'est pas configuré. La simulation ne peut pas envoyer de mail.
+
+`mail-service/` prépare l'autorisation Google par utilisatrice, la file persistante chiffrée, l'envoi Gmail, le suivi des fils, une relance unique et son arrêt sur réponse. Tests avec faux Gmail : aucun mail réel envoyé. Configuration Google et hébergement restent à réaliser par le propriétaire ; voir `mail-service/README.md`. Le service n'est pas encore activé ni vérifié avec des comptes réels.

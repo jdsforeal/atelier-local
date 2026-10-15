@@ -1,0 +1,30 @@
+# Proposition de déploiement payant ; aucune ressource n'est créée par ce fichier seul.
+services:
+  - type: web
+    name: atelier-mail
+    runtime: node
+    region: frankfurt
+    plan: starter
+    buildCommand: node --check mail-service/server.mjs
+    startCommand: node mail-service/server.mjs
+    healthCheckPath: /health
+    numInstances: 1
+    disk:
+      name: atelier-mail-private
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: MAIL_PUBLIC_URL
+        sync: false
+      - key: MAIL_ALLOWED_ORIGIN
+        value: https://jdsforeal.github.io
+      - key: MAIL_ENCRYPTION_KEY
+        sync: false
+      - key: MAIL_DATA_PATH
+        value: /data/atelier-mail.enc
