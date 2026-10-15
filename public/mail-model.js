@@ -70,8 +70,11 @@ function mailDraftFor(project, group, existing, signature) {
     reminderBody: `Bonjour,\n\nJe me permets de revenir vers vous concernant notre demande pour « ${project.name} ». Auriez-vous des nouvelles sur les disponibilités et les conditions ?\n\nMerci beaucoup,\n${signature || "[Votre signature à compléter]"}`,
   };
 }
-function mailValidationError(draft) {
-  if (!mailAddress(draft.recipient))
+function mailValidationError(draft, simulation = false) {
+  if (
+    !mailAddress(draft.recipient) &&
+    !(simulation && /^[^\s@]+@[^\s@]+\.invalid$/.test(draft.recipient || ""))
+  )
     return "Adresse du destinataire à compléter.";
   if (!draft.subject?.trim() || /[\r\n]/.test(draft.subject))
     return "Objet manquant ou incorrect.";

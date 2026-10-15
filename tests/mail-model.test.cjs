@@ -52,3 +52,6 @@ assert.equal(
 console.log(
   "Console mails : destinataire lié, signature, choix multiple, validation périmée et message envoyé conservé : OK.",
 );
+const fictitious = { ...d, recipient: "camille@showroom.example.invalid" };
+assert.notEqual(mailValidationError(fictitious), "");
+assert.equal(mailValidationError(fictitious, true), "");

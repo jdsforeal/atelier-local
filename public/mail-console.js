@@ -92,12 +92,18 @@ function mailTime(s) {
 }
 function mailRowHTML(p, { group: g, draft: d }) {
   const locked = !mailCanEdit(p, d),
-    error = mailValidationError(d),
+    error = mailValidationError(d, demoMode),
     status = mailStatus(d);
   const contacts = g?.contacts || [];
   const options = [
     ...new Map(
-      contacts.filter((c) => mailAddress(c.email)).map((c) => [c.email, c]),
+      contacts
+        .filter(
+          (c) =>
+            mailAddress(c.email) ||
+            (demoMode && /^[^\s@]+@[^\s@]+\.invalid$/.test(c.email || "")),
+        )
+        .map((c) => [c.email, c]),
     ).values(),
   ];
   if (d.recipient && !options.some((c) => c.email === d.recipient))
@@ -124,7 +130,7 @@ messages = function (p) {
       !r.draft.stale &&
       !r.draft.orphan &&
       !mailIsSent(r.draft) &&
-      !mailValidationError(r.draft),
+      !mailValidationError(r.draft, demoMode),
   );
   const counts = {
     Tout: rows.length,
@@ -300,7 +306,7 @@ document.addEventListener("change", (event) => {
       updateMailDraft(t.dataset.mailApprove, (d, row) => {
         if (t.checked) {
           const check = row.draft;
-          const error = mailValidationError(check);
+          const error = mailValidationError(check, demoMode);
           if (error) throw Error(error);
           d.signature = row.draft.currentSignature;
           d.state = "Validé";
@@ -364,7 +370,7 @@ document.addEventListener("click", async (event) => {
         if (
           !mailCanEdit(project(), row.draft) ||
           row.group?.key === "unassigned" ||
-          mailValidationError(row.draft)
+          mailValidationError(row.draft, demoMode)
         ) {
           issues++;
           continue;
@@ -428,7 +434,7 @@ document.addEventListener("click", async (event) => {
           !r.draft.stale &&
           !r.draft.orphan &&
           !mailIsSent(r.draft) &&
-          !mailValidationError(r.draft),
+          !mailValidationError(r.draft, demoMode),
       );
       if (!rows.length || !mailSession || demoMode) return;
       modal(

@@ -90,3 +90,7 @@ Toutes les pages sont affichées à la suite dans une zone défilante. Le compte
 ## Version 0.11.3 — ordre des onglets du projet
 
 Vue d’ensemble → Moodboard → Looks & besoins → Sélection client → Demandes fournisseurs → Budget & devis → Réceptions & retours → Parcours & bilan. « Toutes les pièces du projet » devient une vue secondaire depuis Looks & besoins, avec un bouton de retour ; les accès internes existants restent utilisables. Vérification navigateur de l’ordre, de la vue secondaire, du retour et de Sélection client.
+
+## Version 0.11.4 — réseau complet de simulation
+
+Migration du mode simulation uniquement, sans réinitialiser ses projets : 518 contacts fictifs pour 222 structures dans le scénario de départ, deux ou trois interlocuteurs par marque/fournisseur. Les contacts ajoutés dans un navigateur sont conservés et associés à leur structure. Les pièces proposent un interlocuteur de leur fournisseur et les anciennes demandes fictives multi-fournisseurs sont séparées. Migration idempotente ; anciens envois conservés, brouillons à relire. Adresses réservées `.invalid` ; sélection et validation de brouillons permises seulement en simulation, envoi toujours désactivé. Aucun enrichissement fictif dans l’espace personnel. Suite de tests complète et vérification navigateur d’une fiche avec deux contacts liés.
