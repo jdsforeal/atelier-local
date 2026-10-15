@@ -20,6 +20,8 @@ function moodboardPdf(pages) {
   add("");
   const ids = [];
   for (const page of pages) {
+    const pw = page.pointWidth || 842,
+      ph = page.pointHeight || 595;
     const raw = atob(page.jpeg.split(",")[1]);
     const jpeg = Uint8Array.from(raw, (c) => c.charCodeAt(0));
     const img = add(
@@ -31,23 +33,23 @@ function moodboardPdf(pages) {
         bytes("\nendstream"),
       ]),
     );
-    const stream = "q 842 0 0 595 0 0 cm /Im0 Do Q";
+    const stream = `q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`;
     const content = add(
       `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
     );
     const annotations = (page.links || [])
       .filter((l) => /^https?:\/\//.test(l.url))
       .map((link) => {
-        const x = (link.x * 842) / page.width,
-          y = 595 - ((link.y + link.height) * 595) / page.height;
+        const x = (link.x * pw) / page.width,
+          y = ph - ((link.y + link.height) * ph) / page.height;
         const url = encodeURI(link.url).replace(/[\\()]/g, "\\$&");
         return add(
-          `<< /Type /Annot /Subtype /Link /Rect [${x} ${y} ${x + (link.width * 842) / page.width} ${y + (link.height * 595) / page.height}] /Border [0 0 0] /A << /S /URI /URI (${url}) >> >>`,
+          `<< /Type /Annot /Subtype /Link /Rect [${x} ${y} ${x + (link.width * pw) / page.width} ${y + (link.height * ph) / page.height}] /Border [0 0 0] /A << /S /URI /URI (${url}) >> >>`,
         );
       });
     ids.push(
       add(
-        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /XObject << /Im0 ${img} 0 R >> >> /Contents ${content} 0 R /Annots [${annotations.map((id) => id + " 0 R").join(" ")}] >>`,
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 ${img} 0 R >> >> /Contents ${content} 0 R /Annots [${annotations.map((id) => id + " 0 R").join(" ")}] >>`,
       ),
     );
   }

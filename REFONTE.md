@@ -47,3 +47,7 @@ Lien à utiliser pour travailler : ?mode=personal&v=0.8.1. Les données étant p
 Une ligne par fournisseur : destinataire lié, pièces, aperçu, validation, relance et délai. Sélection et validation en lot, signature commune, ajout de contact depuis une demande, relecture si les pièces ou le brief changent. Les textes se modifient directement dans la liste. L'envoi demande confirmation du lot et reste indisponible tant que le service Gmail n'est pas configuré. La simulation ne peut pas envoyer de mail.
 
 `mail-service/` prépare l'autorisation Google par utilisatrice, la file persistante chiffrée, l'envoi Gmail, le suivi des fils, une relance unique et son arrêt sur réponse. Tests avec faux Gmail : aucun mail réel envoyé. Configuration Google et hébergement restent à réaliser par le propriétaire ; voir `mail-service/README.md`. Le service n'est pas encore activé ni vérifié avec des comptes réels.
+
+## 0.9.1 — Export PDF du devis
+
+Bouton « Exporter le devis PDF » dans le projet : document A4 dédié, lignes, quantités, tarifs, totaux HT et TVA optionnelle explicite, référence et version, coordonnées et conditions. Export marqué BROUILLON ; les mentions professionnelles restent à vérifier par l’utilisateur. Calculs arrondis par ligne et pagination automatique pour les documents longs. Aucun service distant ni abonnement. Le même moteur PDF conserve le format paysage des moodboards et permet le portrait du devis.
