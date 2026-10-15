@@ -52,12 +52,17 @@ function quoteDocumentSettings() {
         "text",
         s.identifier || "",
       ) +
-      field("clientName", "Client", "text", d.clientName || p.client || "") +
+      field(
+        "clientName",
+        "Client",
+        "text",
+        q.qontoPreparation?.client?.name || d.clientName || p.client || "",
+      ) +
       field(
         "clientAddress",
         "Adresse du client — facultatif",
         "textarea",
-        d.clientAddress || "",
+        q.qontoPreparation?.client?.address || d.clientAddress || "",
       ) +
       field(
         "reference",
@@ -104,6 +109,16 @@ function quoteDocumentSettings() {
         email: data.issuerEmail,
         identifier: data.issuerIdentifier,
       };
+      if (q.qontoPreparation?.client) {
+        const client = q.qontoPreparation.client;
+        if (
+          client.name !== data.clientName ||
+          client.address !== data.clientAddress
+        )
+          client.confirmed = false;
+        client.name = data.clientName;
+        client.address = data.clientAddress;
+      }
       q.document = {
         clientName: data.clientName,
         clientAddress: data.clientAddress,
@@ -115,6 +130,7 @@ function quoteDocumentSettings() {
       };
     },
   );
+  $("#form").elements.taxRate.step = "0.01";
 }
 function quotePdfPages(p, q, settings = {}) {
   const amounts = quoteAmounts(q),
@@ -235,7 +251,7 @@ function quotePdfPages(p, q, settings = {}) {
         12,
       );
       clientEnd = paragraph(
-        d.clientAddress || "",
+        q.qontoPreparation?.client?.address || d.clientAddress || "",
         665,
         clientEnd + 12,
         485,

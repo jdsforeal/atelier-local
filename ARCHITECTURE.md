@@ -64,3 +64,7 @@ L’export JSON contient les données complètes. La synchronisation entre appar
 - `mail-service/README.md` : activation, limites du pilote et vérification obligatoire avec comptes test.
 
 Le site reste autonome pour les projets et brouillons. Le service ne reçoit que les messages explicitement validés pour envoi. Aucune clé Google dans `public/` ni dans GitHub. Ce service n'est pas déployé par GitHub Pages.
+
+### Préparation Qonto 0.9.2
+
+`public/qonto-model.js` prépare les données sans réseau ; `public/qonto-preparation.js` affiche les contrôles et le parcours simulé dans Devis. `qonto-integration/adapter.mjs` définit la frontière du futur transport privé, testé uniquement avec un faux Qonto. Les informations de client sont reliées au document PDF, avec nouvelle vérification d'identité lorsqu'elles changent. Voir `qonto-integration/README.md` pour les étapes de connexion restantes et les limites.

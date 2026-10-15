@@ -1754,3 +1754,63 @@ button:disabled {
   margin-top: 12px;
   padding-top: 10px;
 }
+.qonto-preparation {
+  margin-top: 24px;
+}
+.qonto-overview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px;
+  background: #eff0e9;
+  border-radius: 12px;
+  margin: 20px 0;
+}
+.qonto-overview p {
+  line-height: 1.6;
+  font-size: 13px;
+}
+.qonto-lines {
+  margin: 15px 0;
+}
+.qonto-lines label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e3e5dc;
+  font-size: 13px;
+}
+.qonto-lines input {
+  width: 18px;
+  flex: none;
+}
+.qonto-lines span {
+  flex: 1;
+}
+.qonto-checks {
+  background: #fbf5e9;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin: 18px 0;
+}
+.qonto-checks li,
+.qonto-test li {
+  line-height: 1.8;
+  font-size: 13px;
+}
+.qonto-test {
+  border: 1px dashed #839174;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 20px;
+}
+.qonto-test p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+@media (max-width: 650px) {
+  .qonto-overview {
+    grid-template-columns: 1fr;
+  }
+}

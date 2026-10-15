@@ -51,3 +51,7 @@ Une ligne par fournisseur : destinataire lié, pièces, aperçu, validation, rel
 ## 0.9.1 — Export PDF du devis
 
 Bouton « Exporter le devis PDF » dans le projet : document A4 dédié, lignes, quantités, tarifs, totaux HT et TVA optionnelle explicite, référence et version, coordonnées et conditions. Export marqué BROUILLON ; les mentions professionnelles restent à vérifier par l’utilisateur. Calculs arrondis par ligne et pagination automatique pour les documents longs. Aucun service distant ni abonnement. Le même moteur PDF conserve le format paysage des moodboards et permet le portrait du devis.
+
+## 0.9.2 — Préparation Qonto sans compte connecté
+
+Section dans Devis : choix des lignes à facturer, identité du donneur d'ordre reliée au PDF, contrôles de dates/TVA/montants et aperçu du parcours futur en simulation locale. Les statuts réels restent inchangés. Adaptateur de contrat testé avec un faux transport et journal anti-doublon ; aucun accès Qonto effectif. OAuth, rapprochement des clients, paramètres de TVA/numérotation et tests sandbox réels restent à réaliser quand le compte sera disponible. Aucun hébergement ni abonnement activé.
