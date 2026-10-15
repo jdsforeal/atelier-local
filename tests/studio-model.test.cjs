@@ -36,3 +36,5 @@ assert(crop.w < 0.5 && crop.h < 0.7 && crop.x >= 0 && crop.x + crop.w <= 1);
 console.log(
   "Stock distinct des prêts, retours synchronisés, correction et cadrage conservateur : OK.",
 );
+
+assert.throws(() => quickPieceAction(y, "returned"));

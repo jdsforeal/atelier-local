@@ -304,6 +304,15 @@ function applyStudioAction(ids, action) {
     );
     return;
   }
+  if (
+    ["dispatch", "returned", "reopen"].includes(action) &&
+    items.some((x) => !["Prêt", "Location"].includes(x.mode))
+  ) {
+    toast(
+      "Décochez les pièces en propriété : seules les locations et prêts sont à restituer.",
+    );
+    return;
+  }
   items.forEach((x) => quickPieceAction(x, action));
   syncReturnMilestones([...new Set(items.map((x) => x.project))]);
   studioChecked.clear();

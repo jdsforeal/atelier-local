@@ -30,6 +30,13 @@ function quickPieceAction(
   action,
   today = new Date().toISOString().slice(0, 10),
 ) {
+  if (
+    ["dispatch", "returned", "reopen"].includes(action) &&
+    !["Prêt", "Location"].includes(piece.mode)
+  )
+    throw Error(
+      "Les actions de restitution concernent uniquement les prêts et locations.",
+    );
   if (action === "receive") {
     piece.status = "Reçu";
     piece.received ||= today;
