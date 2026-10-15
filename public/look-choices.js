@@ -302,23 +302,40 @@ document.addEventListener("click", (event) => {
     const piece = db.pieces.find(
       (piece) => piece.id === button.dataset.rejectPiece,
     );
-    if (piece.commit) {
-      toast("Cette pièce est engagée. Ajustez le budget avant de l’écarter.");
-      return;
-    }
     modal(
       "Écarter cette option",
-      field("reason", "Motif : coupe, couleur, budget…", "textarea"),
+      field("reason", "Motif : coupe, couleur, budget…", "textarea") +
+        (piece.commit
+          ? field("financialDecision", "Coût déjà engagé", "select", "keep", [
+              ["keep", "Conserver le coût : réservation / achat encore dû"],
+              [
+                "release",
+                "Annulation confirmée sans frais : libérer le budget",
+              ],
+            ]) +
+            '<p class="note">Écarter du look ne résilie pas une location. Libérez le coût uniquement après confirmation du fournisseur.</p>'
+          : ""),
       (data) => {
         if (!data.reason.trim())
           throw new Error("Ajoutez un motif pour conserver la trace du choix.");
         piece.selection = "Écartée";
         piece.selectionReason = data.reason;
-        piece.status = "Écarté";
-        logChoice(piece.look, "Écartée", data.reason, {
-          piece: piece.id,
-          needId: piece.needId,
-        });
+        if (data.financialDecision === "release") piece.commit = false;
+        if (!piece.commit) piece.status = "Écarté";
+        logChoice(
+          piece.look,
+          "Écartée",
+          data.reason +
+            (piece.commit
+              ? " · coût conservé"
+              : data.financialDecision === "release"
+                ? " · engagement annulé sans frais"
+                : ""),
+          {
+            piece: piece.id,
+            needId: piece.needId,
+          },
+        );
       },
     );
   }
