@@ -5,7 +5,7 @@ render = function () {
   if (badge?.firstChild)
     badge.firstChild.textContent = badge.firstChild.textContent.replace(
       /^0\.8 /,
-      "0.8.1 ",
+      "0.8.2 ",
     );
   if (demoMode) return;
   const note = [...document.querySelectorAll("p.note")].find((el) =>
@@ -15,6 +15,11 @@ render = function () {
     note.textContent =
       "Répertoire de référence documenté, non exhaustif. Aucun contact personnel n’est ajouté automatiquement. Vos ajouts restent dans votre navigateur.";
   const notice = $(".notice");
+  if (cleanPersonalRecords(db, legacySeed).count)
+    notice.insertAdjacentHTML(
+      "beforeend",
+      `<button class="quiet" data-redo-personal-cleanup>Retirer les données fictives</button>`,
+    );
   if (db.personalCleanupBackup?.count)
     notice.insertAdjacentHTML(
       "beforeend",
@@ -27,7 +32,15 @@ render = function () {
     );
 };
 document.addEventListener("click", (event) => {
-  if (!event.target.closest("[data-undo-personal-cleanup]") || demoMode) return;
+  if (demoMode) return;
+  if (event.target.closest("[data-redo-personal-cleanup]")) {
+    db = preparePersonalWorkspace(db, true);
+    normalize();
+    render();
+    toast(db.personalCleanupWarning || "Données fictives retirées. Vos saisies personnelles sont conservées.");
+    return;
+  }
+  if (!event.target.closest("[data-undo-personal-cleanup]")) return;
   const backup = db.personalCleanupBackup;
   if (!backup) return;
   for (const [key, records] of Object.entries(backup.removed)) {
