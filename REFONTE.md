@@ -86,3 +86,7 @@ Moodboards, sélections client, devis de travail et versions conservées ouvrent
 ## Version 0.11.2 — lecture continue des aperçus
 
 Toutes les pages sont affichées à la suite dans une zone défilante. Le compteur suit le défilement ; les flèches servent de raccourcis vers les pages adjacentes. En-tête et téléchargement restent visibles. Vérifié dans le navigateur sur une sélection de sept pages : scroll vers la deuxième page et affichage simultané du début de la suivante.
+
+## Version 0.11.3 — ordre des onglets du projet
+
+Vue d’ensemble → Moodboard → Looks & besoins → Sélection client → Demandes fournisseurs → Budget & devis → Réceptions & retours → Parcours & bilan. « Toutes les pièces du projet » devient une vue secondaire depuis Looks & besoins, avec un bouton de retour ; les accès internes existants restent utilisables. Vérification navigateur de l’ordre, de la vue secondaire, du retour et de Sélection client.

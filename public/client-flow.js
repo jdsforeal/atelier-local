@@ -606,3 +606,47 @@ document.addEventListener("click", (event) => {
   }
 });
 render();
+
+/** Navigation du projet : ordre de lecture, sans imposer d'étapes obligatoires. */
+const orderedProjectRender = render;
+render = function () {
+  orderedProjectRender();
+  if (view !== "detail") return;
+  const navigation = document.querySelector(".tabs");
+  if (!navigation) return;
+  const clientButton = navigation.querySelector("[data-flow-board]");
+  if (clientButton) clientButton.dataset.tab = "client-board";
+  for (const [id, label] of [
+    ["overview", "Vue d’ensemble"],
+    ["mood", "Moodboard"],
+    ["looks", "Looks & besoins"],
+    ["client-board", "Sélection client"],
+    ["messages", "Demandes fournisseurs"],
+    ["quote", "Budget & devis"],
+    ["returns", "Réceptions & retours"],
+    ["workflow", "Parcours & bilan"],
+  ]) {
+    const button = navigation.querySelector(`[data-tab="${id}"]`);
+    if (!button) continue;
+    button.textContent = label;
+    button.classList.toggle("active", tab === id);
+    navigation.append(button);
+  }
+  navigation.querySelector('[data-tab="pieces"]')?.remove();
+  if (tab === "looks") {
+    document
+      .querySelector(".process-guide")
+      ?.insertAdjacentHTML(
+        "beforeend",
+        '<button data-tab="pieces">Toutes les pièces du projet →</button>',
+      );
+  }
+  if (tab === "pieces") {
+    navigation.querySelector('[data-tab="looks"]')?.classList.add("active");
+    navigation.insertAdjacentHTML(
+      "afterend",
+      '<div class="section-head"><h2>Toutes les pièces du projet</h2><button data-tab="looks">← Revenir aux looks & besoins</button></div>',
+    );
+  }
+};
+render();
