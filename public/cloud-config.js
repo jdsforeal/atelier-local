@@ -3,5 +3,5 @@
 window.ATELIER_CLOUD = {
   url: "https://bizqoyhlacvijaeeoint.supabase.co",
   publishableKey: "sb_publishable_UHT8j4Zc1tmq9DBqUilNyQ_6AoJB5Ss",
-  enabled: false
+  enabled: true
 };
