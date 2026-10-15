@@ -1,0 +1,25 @@
+const assert=require('node:assert/strict');
+const vm=require('node:vm');
+const fs=require('node:fs');
+const source=fs.readFileSync('public/account-ui.js','utf8').split('cloudInbox = async')[0];
+(async()=>{
+ let response=Promise.resolve([{id:'inv-1'}]), filters=[];
+ const query={select(){return this},eq(k,v){filters.push([k,v]);return this},is(){return this},gt(){return response}};
+ const context=vm.createContext({cloudState:{user:{id:'a',email:'A@example.test'},client:{from(){return query}}},document:{hidden:false,querySelectorAll(){return []},querySelector(){return null}},cloudResult:async p=>await p,Date});
+ vm.runInContext(source,context);
+ await vm.runInContext('checkInvitations(true)',context);
+ assert.equal(filters[0][1],'a@example.test');
+ assert.equal(vm.runInContext('invitationNotice.items.length',context),1);
+ response=Promise.reject(Error('offline'));
+ await vm.runInContext('checkInvitations(true)',context);
+ assert.equal(vm.runInContext('invitationNotice.error',context),true);
+ assert.match(vm.runInContext('invitationCountLabel()',context),/indisponible/);
+ let resolve;response=new Promise(r=>resolve=r);
+ const pending=vm.runInContext('checkInvitations(true)',context);
+ context.cloudState.user={id:'b',email:'b@example.test'};
+ resolve([{id:'private-a'}]);await pending;
+ response=Promise.resolve([]);await vm.runInContext('checkInvitations(true)',context);
+ assert.equal(vm.runInContext('invitationNotice.items.length',context),0);
+ assert.equal(vm.runInContext('invitationNotice.userId',context),'b');
+ console.log('Notifications : filtre destinataire, erreur visible et changement de compte vérifiés.');
+})().catch(e=>{console.error(e);process.exit(1)});

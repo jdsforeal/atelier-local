@@ -15,6 +15,7 @@ await pg.exec(
   await readFile("supabase/migrations/202610150002_private_images.sql", "utf8"),
 );
 await pg.exec(await readFile("supabase/migrations/202610150003_studio_settings.sql", "utf8"));
+await pg.exec(await readFile("supabase/migrations/202610150004_studio_profile.sql", "utf8"));
 const owner = "00000000-0000-0000-0000-000000000001",
   assistant = "00000000-0000-0000-0000-000000000002",
   stranger = "00000000-0000-0000-0000-000000000003",
@@ -224,4 +225,9 @@ await assert.rejects(as(assistant,"select public.atelier_rename_studio($1,'Intru
 await assert.rejects(as(stranger,"select public.atelier_rename_studio($1,'Intrusion')",[studio]),/réservée/);
 await assert.rejects(as(owner,"select public.atelier_rename_studio($1,' ')",[studio]),/caractères/);
 console.log('Nom du studio : propriétaire seule, nom valide et refus des autres comptes OK.');
+await as(owner,"select public.atelier_update_studio_profile($1,'Studio avec photo','data:image/jpeg;base64,YWJj')",[studio]);
+assert.equal(scalar(await as(owner,'select avatar from public.atelier_studios where id=$1',[studio])), 'data:image/jpeg;base64,YWJj');
+await assert.rejects(as(assistant,"select public.atelier_update_studio_profile($1,'Intrusion','')",[studio]),/réservée/);
+await assert.rejects(as(owner,"select public.atelier_update_studio_profile($1,'Studio','data:image/svg+xml;base64,YWJj')",[studio]),/Image invalide/);
+console.log('Identité studio : photo réservée aux membres autorisés, modification propriétaire seule, SVG refusé OK.');
 await pg.close();
