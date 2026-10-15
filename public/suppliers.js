@@ -3,7 +3,8 @@ let networkTab = demoMode ? "directory" : "contacts",
   supplierSearch = "",
   supplierCountry = "Tous",
   supplierType = "Tous",
-  supplierCategory = "Toutes";
+  supplierCategory = "Toutes",
+  supplierCoverage = "Tous";
 let networkSize = 24,
   networkPage = 0;
 const supplierOriginalLabel = contactLabel;
@@ -98,7 +99,7 @@ function supplierDetail(id) {
     ${s.source ? `<p><a href="${esc(s.source)}" target="_blank" rel="noopener">Source de la fiche ↗</a> · relevé ${esc(s.checked || "à vérifier")}</p>` : ""}
     <p class="note">Référencement ≠ accord de prêt. Stock, tarifs, tailles et disponibilité à confirmer auprès du fournisseur.</p>
     ${s.website ? `<p><a href="${esc(s.website)}" target="_blank" rel="noopener">Consulter le site / la fiche ↗</a></p>` : ""}
-    <h3>Vos interlocuteurs liés (${contacts.length})</h3>${contacts.map((c) => `<p>${esc(c.name)} · ${esc(c.role || "")} · ${esc(c.email || "Adresse à compléter")}</p>`).join("") || "<p>Aucun contact personnel lié.</p>"}
+    <h3>Vos interlocuteurs liés (${contacts.length})</h3>${contacts.map((c) => `<p>${esc(c.name)} · ${esc(c.role || "")} · ${esc(c.email || "Adresse à compléter")}${c.source ? ` · <a href="${esc(c.source)}" target="_blank" rel="noopener">Source ↗</a>` : ""}</p>`).join("") || "<p>Aucun contact personnel lié.</p>"}
     <div class="actions"><button type="button" data-add-supplier-contact="${esc(id)}">＋ Ajouter un interlocuteur</button><button type="button" data-edit-supplier="${esc(id)}">Modifier ma fiche</button></div>
     ${s.emails?.length ? `<h3>Coordonnées professionnelles publiées</h3>${s.emails.map((email) => `<p>${esc(email)} <button type="button" data-import-supplier-email="${esc(id)}" data-email="${esc(email)}">Ajouter à mon carnet</button></p>`).join("")}` : '<p class="note">Pas d’adresse publique vérifiée dans cette fiche. Ajoutez votre contact presse, showroom ou location.</p>'}`,
     () => {},
@@ -114,6 +115,7 @@ editContact = function (id, supplierId = "") {
   const c = db.contacts.find((c) => c.id === id) || {};
   modal(
     id ? "Modifier le contact" : "Ajouter un interlocuteur",
+    (c.source ? `<p class="note">Coordonnée publiée · relevée le ${esc(c.checked || "à vérifier")} · <a href="${esc(c.source)}" target="_blank" rel="noopener">Consulter la source officielle ↗</a>${c.contactUrl ? " · Contact par formulaire, pas d’adresse e-mail vérifiée." : " · Fonction et disponibilité à reconfirmer."}</p>` : "") +
     supplierOptions(c.supplierId || supplierId, "Structure liée") +
       field("name", "Nom / service", "text", c.name || "") +
       field("email", "E-mail", "email", c.email || "") +
@@ -128,8 +130,13 @@ editContact = function (id, supplierId = "") {
         supplierId: supplier?.id || "",
         brand: supplier?.name || "",
       };
-      if (id) Object.assign(c, obj);
-      else db.contacts.push({ ...obj, id: uid() });
+      if (id) {
+        if (c.publicDirectory && (obj.email !== c.email || obj.supplierId !== c.supplierId)) {
+          c.originalPublicSource = c.source;
+          for (const key of ['source', 'checked', 'publicDirectory', 'publicationStatus', 'contactUrl']) delete c[key];
+        }
+        Object.assign(c, obj);
+      } else db.contacts.push({ ...obj, id: uid() });
     },
   );
 };
@@ -284,7 +291,8 @@ renderContacts = function () {
         ),
       ).includes(q) &&
       (networkTab !== "directory" ||
-        ((supplierCountry === "Tous" || s.country === supplierCountry) &&
+        ((supplierCoverage === "Tous" || (supplierCoverage === "Avec contact" ? relatedContacts(db, s).length > 0 : relatedContacts(db, s).length === 0)) &&
+        (supplierCountry === "Tous" || s.country === supplierCountry) &&
           (supplierType === "Tous" || s.type === supplierType) &&
           (supplierCategory === "Toutes" ||
             s.categories?.includes(supplierCategory)))),
@@ -300,17 +308,17 @@ renderContacts = function () {
       "contact",
       "Ajouter un contact",
     ) +
-    `<div class="toolbar"><button data-network-tab="directory" class="${networkTab === "directory" ? "primary" : ""}">Répertoire (${directory.length})</button><button data-network-tab="contacts" class="${networkTab === "contacts" ? "primary" : ""}">Mes contacts (${db.contacts.length})</button><button data-new-supplier>＋ Structure</button></div>
- <p class="note">Répertoire de départ documenté, non exhaustif. Les contacts de simulation sont fictifs ; les sources du répertoire sont réelles. Vos ajouts restent dans votre navigateur.</p>
+    `<div class="toolbar"><button data-network-tab="directory" class="${networkTab === "directory" ? "primary" : ""}">Répertoire (${directory.length})</button><button data-network-tab="contacts" class="${networkTab === "contacts" ? "primary" : ""}">${demoMode ? "Contacts publics et ajouts" : "Mes contacts"} (${db.contacts.length})</button><button data-new-supplier>＋ Structure</button></div>
+ <p class="note">${demoMode ? "Simulation : coordonnées professionnelles publiques sourcées ; projets et échanges fictifs. Aucun message réel envoyé. Les marques sans contact restent à compléter." : "Répertoire de départ documenté, non exhaustif. Ajoutez les coordonnées publiques à votre carnet quand elles sont utiles."}</p>
  <div class="toolbar"><input id="supplier-search" type="search" placeholder="Nom, spécialité, ville…" aria-label="Rechercher dans le réseau" value="${esc(supplierSearch)}">
- ${networkTab === "directory" ? `<select id="supplier-country" aria-label="Pays">${opts(["Tous", "Belgique", "France"], supplierCountry)}</select><select id="supplier-type" aria-label="Activité">${opts(["Tous", "Marque", "Location costumes", "Showroom", "À préciser"], supplierType)}</select><select id="supplier-category" aria-label="Spécialité">${opts(["Toutes", "Vêtements", "Bijoux", "Accessoires", "Costumes"], supplierCategory)}</select>` : ""}
+ ${networkTab === "directory" ? `<select id="supplier-coverage" aria-label="Couverture des contacts">${opts(["Tous", "Avec contact", "Contact à rechercher"], supplierCoverage)}</select><select id="supplier-country" aria-label="Pays">${opts(["Tous", "Belgique", "France"], supplierCountry)}</select><select id="supplier-type" aria-label="Activité">${opts(["Tous", "Marque", "Location costumes", "Showroom", "À préciser"], supplierType)}</select><select id="supplier-category" aria-label="Spécialité">${opts(["Toutes", "Vêtements", "Bijoux", "Accessoires", "Costumes"], supplierCategory)}</select>` : ""}
  <select id="network-size" aria-label="Fiches par page">${[12, 24, 50, 100].map((n) => `<option value="${n}" ${n === networkSize ? "selected" : ""}>${n} par page</option>`).join("")}</select><span>${list.length} résultats</span></div>
  <div class="contact-grid">${list
    .slice(networkPage * networkSize, (networkPage + 1) * networkSize)
    .map((s) =>
      networkTab === "directory"
-       ? `<button class="contact-card" data-supplier="${esc(s.id)}"><span class="avatar">${esc(s.name[0])}</span><div><strong>${esc(s.name)}</strong><small>${esc(s.type)} · ${esc(s.country || "International / à préciser")}</small><small>${esc((s.categories || []).join(" · "))}</small><small>${relatedContacts(db, s).length} interlocuteur(s) lié(s)</small></div></button>`
-       : `<button class="contact-card" data-edit-contact="${esc(s.id)}"><span class="avatar">${esc(s.name?.[0] || "?")}</span><div><strong>${esc(s.brand || "Structure à relier")}</strong><span>${esc(s.name)}</span><small>${esc(s.role || "")} · ${esc(s.email || "Adresse à compléter")}</small></div></button>`,
+       ? `<button class="contact-card" data-supplier="${esc(s.id)}"><span class="avatar">${esc(s.name[0])}</span><div><strong>${esc(s.name)}</strong><small>${esc(s.type)} · ${esc(s.country || "International / à préciser")}</small><small>${esc((s.categories || []).join(" · "))}</small><small>${relatedContacts(db, s).length ? relatedContacts(db, s).length + " interlocuteur(s) lié(s)" : "Contact à rechercher"}</small></div></button>`
+       : `<button class="contact-card" data-edit-contact="${esc(s.id)}"><span class="avatar">${esc(s.name?.[0] || "?")}</span><div><strong>${esc(s.brand || "Structure à relier")}</strong><span>${esc(s.name)}</span>${s.publicDirectory ? `<small>Source officielle · relevé ${esc(s.checked)}</small>` : ""}<small>${esc(s.role || "")} · ${esc(s.email || "Adresse à compléter")}</small></div></button>`,
    )
    .join("")}</div>
  ${list.length ? pager(networkPage, list.length, networkSize, "network") : '<div class="empty">Aucun résultat. Ajoutez votre structure ou élargissez les filtres.</div>'}`
@@ -448,6 +456,7 @@ document.addEventListener("change", (event) => {
   else if (id === "supplier-country") supplierCountry = event.target.value;
   else if (id === "supplier-type") supplierType = event.target.value;
   else if (id === "supplier-category") supplierCategory = event.target.value;
+  else if (id === "supplier-coverage") supplierCoverage = event.target.value;
   else return;
   networkPage = 0;
   render();
