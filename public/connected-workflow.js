@@ -25,14 +25,13 @@ function importInspirations() {
     async (data, form) => {
       const files = [...form.elements.inspirationFiles.files];
       if (!files.length) throw Error("Choisissez au moins une image.");
-      const images = [];
-      for (const file of files)
-        images.push({
-          image: await readImage(file),
-          caption: "",
-          url: "",
-          filename: file.name,
-        });
+      const prepared = await prepareImageBatch(files);
+      const images = prepared.map((image, index) => ({
+        ...image,
+        caption: "",
+        url: "",
+        filename: files[index].name,
+      }));
       p.boards.push(...images);
       p.boardRevision = (p.boardRevision || 0) + 1;
     },

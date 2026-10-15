@@ -498,7 +498,9 @@ function action(a) {
           "Mode d’obtention",
           "select",
           "Prêt",
-          ["Prêt", "Location", "Achat", "Création"].map((x) => [x, x]),
+          ["Prêt", "Location", "Achat", "Création", "Stock du studio"].map(
+            (x) => [x, x],
+          ),
         ) +
         field("price", "Coût prévu (€)", "number", 0) +
         field("url", "Lien de la pièce", "url") +

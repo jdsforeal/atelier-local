@@ -233,6 +233,8 @@ modal = function (name, fields, callback) {
             : db.pieces.at(-1);
           piece.supplierId = supplier?.id || "";
           piece.image = image;
+          if (file && imageImportMetadata.has(file))
+            Object.assign(piece, imageImportMetadata.get(file));
           delete piece.supplierName;
           delete piece.imageUrl;
           delete piece.piecePhoto;

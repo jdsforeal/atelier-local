@@ -180,7 +180,10 @@ function pieceForm(item = {}) {
       "Obtention",
       "select",
       item.mode || "Prêt",
-      ["Prêt", "Location", "Achat", "Création"].map((x) => [x, x]),
+      ["Prêt", "Location", "Achat", "Création", "Stock du studio"].map((x) => [
+        x,
+        x,
+      ]),
     ) +
     field(
       "price",

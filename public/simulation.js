@@ -6,8 +6,9 @@ function canCloseProject(p) {
   const items = db.pieces.filter(
     (x) =>
       x.project === p.id &&
-      x.commit &&
-      !["Écarté", "Indisponible"].includes(x.status),
+      (x.commit ||
+        x.received ||
+        ["Reçu", "Porté", "Retour en cours", "Retourné"].includes(x.status)),
   );
   return (
     items.every(

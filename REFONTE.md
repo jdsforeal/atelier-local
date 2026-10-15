@@ -25,3 +25,13 @@ Les coûts déjà engagés ne sont pas annulés silencieusement lorsqu’on éca
 La prévision additionne les dépenses engagées, les pièces retenues non engagées et les frais prévus. Un remplacement ne supprime jamais un coût déjà dû. Les cautions restent séparées. Les compteurs des besoins suivent les choix. Le devis reprend la prévision à la création et peut être actualisé explicitement avec conservation de la version précédente et choix des prestations à garder.
 
 Moodboard : import multiple d’images, légendes et liens facultatifs modifiables ensuite, reprise des pièces retenues, compositions Éditorial et Grille. Le téléchargement PDF crée uniquement les planches A4 paysage haute résolution et leurs liens sources, pas une impression de l’application. Le PDF est aplati, le moodboard reste modifiable dans l’application. Les images distantes doivent autoriser l’export ; sinon importer le fichier image.
+
+## Version 0.8 — Moins de saisie au studio
+
+Pièces : Bibliothèque, Stock du studio, Prêts & locations, À retourner, Restituées. Dates et statuts alimentent ces vues, sans recopier les fiches. Réception, expédition, restitution, cautions et actions sur une sélection. Les prêts ne deviennent jamais du stock personnel automatiquement. Réutilisation du stock dans un projet avec photo et références reprises, sans nouveau coût.
+
+Actualités retirées de la navigation ; anciens favoris accessibles depuis Réseau. Pas de faux fil d’actualités.
+
+Import : proposition locale conservatrice de cadrage, comparaison avec l’original, réglages et validation par lot. Ce n’est pas une reconnaissance sémantique du vêtement ; les captures avec plusieurs produits ou du texte exigent un contrôle. Originaux compressés conservés avec les données, restaurables. Le stockage reste limité par le navigateur.
+
+Création de projet : modèles par type, nom proposé, jusqu’à cinq looks, besoins et jalons cochables ; échéances proposées autour de la date principale. Tous les choix restent modifiables. Aucun envoi ou rappel e-mail autonome connecté.
