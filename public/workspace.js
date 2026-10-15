@@ -1,8 +1,10 @@
 // A separate sandbox keeps demonstration records out of the personal workspace.
 const APP_VERSION = "0.5 · Choix & traçabilité";
 const requestedMode = new URLSearchParams(location.search).get("mode");
-let demoMode = requestedMode === "simulation" ||
-  (requestedMode !== "personal" && localStorage.getItem("atelier-demo-active") === "true");
+let demoMode =
+  requestedMode === "simulation" ||
+  (requestedMode !== "personal" &&
+    localStorage.getItem("atelier-demo-active") === "true");
 if (["simulation", "personal"].includes(requestedMode)) {
   localStorage.setItem("atelier-demo-active", String(demoMode));
 }
@@ -54,26 +56,7 @@ const euro = (n) =>
   new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(
     Number(n) || 0,
   );
-const totals = (p) => {
-  const selected = db.pieces.filter(
-    (x) =>
-      x.project === p.id &&
-      x.commit &&
-      !["Écarté", "Indisponible"].includes(x.status),
-  );
-  const costs =
-    selected.reduce((n, x) => n + Number(x.price || 0), 0) +
-    db.expenses
-      .filter((x) => x.project === p.id && ["Engagé", "Payé"].includes(x.state))
-      .reduce((n, x) => n + Number(x.amount || 0), 0);
-  return {
-    costs,
-    remaining: Number(p.budget || 0) - costs,
-    caution: selected
-      .filter((x) => !x.cautionReturned)
-      .reduce((n, x) => n + Number(x.caution || 0), 0),
-  };
-};
+const totals = (p) => projectFinancials(db, p);
 const baseRender = render,
   baseAction = action;
 function contactLabel(c) {
@@ -150,7 +133,7 @@ function renderProjects() {
       .map((p, i) => {
         const c = counts(p),
           t = totals(p);
-        return `<button class="project-tile" data-project="${esc(p.id)}"><div class="tile-top ${esc(p.tone)}"><span>${esc(p.type || "Projet")}</span><span>${esc(p.season || "")}</span><b>${esc(p.name.slice(0, 1))}</b></div><div class="card-body"><div class="meta"><span>${esc(p.client)}</span><span>${date(p.date)}</span></div><h2>${esc(p.name)}</h2><span class="tag">${esc(p.status)}</span><div class="progress"><i style="width:${c.all ? (c.done / c.all) * 100 : 0}%"></i></div><div class="card-foot"><span>${p.looks.length} looks · ${c.done}/${c.all} besoins</span><span>Ouvrir →</span></div><small>${euro(t.costs)} engagés / ${euro(p.budget)}</small></div></button>`;
+        return `<button class="project-tile" data-project="${esc(p.id)}"><div class="tile-top ${esc(p.tone)}"><span>${esc(p.type || "Projet")}</span><span>${esc(p.season || "")}</span><b>${esc(p.name.slice(0, 1))}</b></div><div class="card-body"><div class="meta"><span>${esc(p.client)}</span><span>${date(p.date)}</span></div><h2>${esc(p.name)}</h2><span class="tag">${esc(p.status)}</span><div class="progress"><i style="width:${c.all ? (c.done / c.all) * 100 : 0}%"></i></div><div class="card-foot"><span>${p.looks.length} looks · ${c.done}/${c.all} besoins</span><span>Ouvrir →</span></div><small>${euro(t.forecast)} prévus / ${euro(p.budget)}</small></div></button>`;
       })
       .join(
         "",
@@ -378,7 +361,13 @@ action = function (a) {
         project: pid,
         lines: [
           ...db.pieces
-            .filter((x) => x.project === pid && x.commit)
+            .filter(
+              (x) =>
+                x.project === pid &&
+                (x.commit ||
+                  (x.selection === "Retenue" &&
+                    !["Écarté", "Indisponible"].includes(x.status))),
+            )
             .map((x) => ({ name: x.name, qty: 1, rate: Number(x.price || 0) })),
           ...db.expenses
             .filter((x) => x.project === pid && x.state !== "Annulé")

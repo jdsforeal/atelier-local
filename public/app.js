@@ -226,9 +226,19 @@ function counts(p) {
   const ns = p.looks.flatMap((l) => l.needs);
   return {
     all: ns.length,
-    done: ns.filter((n) =>
-      ["Retenu", "Déjà fourni", "Abandonné"].includes(n.state),
-    ).length,
+    done: ns.filter((n) => {
+      if (["Déjà fourni", "Abandonné"].includes(n.state)) return true;
+      const linked = db.pieces.filter(
+        (x) => x.project === p.id && x.needId === n.id,
+      );
+      return linked.length
+        ? linked.some(
+            (x) =>
+              x.selection === "Retenue" &&
+              !["Écarté", "Indisponible"].includes(x.status),
+          )
+        : n.state === "Retenu";
+    }).length,
   };
 }
 function card(p, i) {
@@ -543,7 +553,10 @@ $("#form").onsubmit = async (e) => {
   button.disabled = true;
   try {
     await submit(Object.fromEntries(new FormData(e.target)), e.target);
-    save();
+    if (!save())
+      throw Error(
+        "Stockage plein : exportez une sauvegarde et libérez de la place. Votre modification reste en mémoire, mais n’est pas sauvegardée.",
+      );
     $("#modal").close();
     render();
     toast("Enregistré dans votre studio.");
@@ -607,7 +620,7 @@ document.addEventListener("click", async (e) => {
       "&body=" +
       encodeURIComponent($("#draft").value);
   }
-  if (b.id === "print-board") window.print();
+  // Export du moodboard pris en charge par connected-workflow.js.
   if (b.id === "backup") {
     const blob = new Blob([JSON.stringify(db, null, 2)], {
       type: "application/json",

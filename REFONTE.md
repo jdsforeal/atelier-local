@@ -19,3 +19,9 @@ Dans Réseau : Répertoire / Mes contacts, recherche, filtres pays et activité,
 6. Veille alimentée par des sources exploitables.
 
 Les coûts déjà engagés ne sont pas annulés silencieusement lorsqu’on écarte un choix créatif. Cette distinction doit encore recevoir une interface dédiée dans l’étape budget.
+
+## Version 0.7 — Budget et moodboard
+
+La prévision additionne les dépenses engagées, les pièces retenues non engagées et les frais prévus. Un remplacement ne supprime jamais un coût déjà dû. Les cautions restent séparées. Les compteurs des besoins suivent les choix. Le devis reprend la prévision à la création et peut être actualisé explicitement avec conservation de la version précédente et choix des prestations à garder.
+
+Moodboard : import multiple d’images, légendes et liens facultatifs modifiables ensuite, reprise des pièces retenues, compositions Éditorial et Grille. Le téléchargement PDF crée uniquement les planches A4 paysage haute résolution et leurs liens sources, pas une impression de l’application. Le PDF est aplati, le moodboard reste modifiable dans l’application. Les images distantes doivent autoriser l’export ; sinon importer le fichier image.

@@ -159,10 +159,7 @@ function retainLookPiece(
         other.selection === "Retenue" &&
         other.id !== piece.id,
     );
-    if (previous.some((other) => other.commit))
-      throw new Error(
-        "Une autre pièce est déjà engagée pour ce besoin. Ajustez son engagement avant de la remplacer.",
-      );
+    // Remplacer le choix créatif conserve les coûts déjà engagés dans le prévisionnel.
     previous.forEach((other) => {
       other.selection = "À comparer";
       database.selectionHistory.push({
