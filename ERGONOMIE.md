@@ -19,3 +19,11 @@ Une cloche avec compteur et un bandeau signalent les invitations non acceptées,
 Les outils de récupération sont rangés sous Dépannage et données. La récupération recharge la sauvegarde du serveur avec confirmation en cas de modifications locales ; la reprise d’enregistrement n’est proposée qu’en cas d’erreur ou de modifications en attente.
 
 Vérifié : menu et formulaire dans le navigateur, accès par la carte latérale, boîte des invitations vide réelle, enregistrement du profil sans changer son identité. Tests PostgreSQL pour les droits de modification et le format des images, tests de notifications (filtrage par adresse, erreur réseau, changement de compte), suite complète. L’ajout d’une photo réelle et la réception d’une invitation sur un deuxième compte restent à essayer avec l’utilisatrice. Aucune photo de démonstration n’a été laissée sur son studio.
+
+## Version 0.14.1 — import visuel des images
+
+Tous les champs d’image (studio, couverture du projet, pièces, options et inspirations) utilisent une zone de dépôt commune, également accessible par clic, clavier et sélection tactile. L’import multiple reste disponible pour les inspirations. Miniatures et noms de fichiers apparaissent avant validation ; retirer la sélection ne supprime pas l’image sauvegardée. Le cadrage et l’enregistrement existants restent déclenchés à la validation du formulaire.
+
+Les fichiers hors JPEG/PNG/WebP, trop lourds ou multiples dans un champ simple sont refusés. Un dépôt invalide conserve la sélection valide précédente. Les aperçus utilisent des URL locales temporaires libérées à leur remplacement ou au retrait du formulaire.
+
+Vérification navigateur : formulaire projet, sélection réelle d’une image depuis le sélecteur, aperçu puis retrait sans enregistrement. Tests des événements de dépôt simple/multiple et refus de format/taille ; suite complète réussie. Le glissement physique depuis Finder n’a pas été automatisé par l’outil navigateur.
