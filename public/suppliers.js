@@ -246,6 +246,11 @@ modal = function (name, fields, callback) {
           piece.brand = brand?.name || "";
           piece.supplierId = supplier?.id || "";
           piece.image = image;
+          if (form.dataset?.productImages && !file) {
+            try { piece.photos = JSON.parse(form.dataset.productImages).filter(url=>safeUrl(url)).slice(0,8); } catch { piece.photos = []; }
+          } else if (piece.photos?.length && piece.photos[0] !== image) {
+            piece.photos = [image, ...piece.photos.filter(url=>url!==image)].filter(Boolean).slice(0,8);
+          }
           if (file && imageImportMetadata.has(file))
             Object.assign(piece, imageImportMetadata.get(file));
           delete piece.supplierName;

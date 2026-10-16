@@ -2,10 +2,15 @@
 const processRender = render;
 const processPieceForm = pieceForm;
 
+function pieceGallery(piece) {
+  const photos=[...new Set([piece.image,...(piece.photos||[])].filter(Boolean))];
+  if(!photos.length)return art(0);
+  return `<div class="piece-gallery"><img class="piece-gallery-main" src="${esc(photos[0])}" alt="${esc(piece.name)}" loading="lazy">${photos.length>1?`<div class="piece-gallery-thumbs" aria-label="Photos de la pièce">${photos.map((url,i)=>`<button type="button" data-piece-photo="${esc(url)}" aria-label="Voir la photo ${i+1}" aria-pressed="${i===0}"><img src="${esc(url)}" alt="Vue ${i+1}" loading="lazy"></button>`).join('')}</div>`:''}</div>`;
+}
 function choiceCard(piece, archived) {
   const retained = piece.selection === "Retenue";
   return `<article class="choice-card ${retained ? "retained" : ""}">
-    ${piece.image ? `<img src="${esc(piece.image)}" alt="${esc(piece.name)}" loading="lazy">` : art(0)}
+    ${pieceGallery(piece)}
     <div class="choice-body"><small>${esc(piece.brand)}</small><h3>${esc(piece.name)}</h3>
     <span class="tag">${esc(piece.selection || "À comparer")}</span>
     <p>${esc(piece.mode)} · coût ${euro(piece.price)} ${piece.commit ? "· engagé" : "· prévision si retenue"}</p>
@@ -150,6 +155,7 @@ function logChoice(lookId, action, reason, extra = {}) {
 document.addEventListener("click", (event) => {
   const button = event.target.closest("button");
   if (!button) return;
+  if(button.dataset.piecePhoto){const gallery=button.closest('.piece-gallery');gallery.querySelector('.piece-gallery-main').src=button.dataset.piecePhoto;gallery.querySelectorAll('[data-piece-photo]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));return;}
   if (button.dataset.choiceLook) {
     choiceLookId = button.dataset.choiceLook;
     render();

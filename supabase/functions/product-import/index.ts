@@ -130,7 +130,20 @@ var require_product_import_model = __commonJS({
         result.price = Number(price);
         result.currency = String(offer?.priceCurrency || meta["product:price:currency"] || "").toUpperCase();
       }
-      const rawImages = [...[product?.image].flat().filter(Boolean), meta["og:image"]].flat();
+      let gallery = [];
+      if (new URL(result.url).hostname.replace(/^www\./, "") === "asos.com") {
+        const match = html.match(/window\.asos\.pdp\.config\.product\s*=\s*(\{"productCode"[^\n]+?\})\s*;/);
+        if (match) {
+          try {
+            const detail = JSON.parse(match[1]);
+            const id = Number(new URL(result.url).pathname.match(/\/prd\/(\d+)/)?.[1]);
+            const colour = Number(new URL(result.url).hash.match(/colourWayId-(\d+)/)?.[1]);
+            if (detail.id === id) gallery = (detail.images || []).filter((image) => image.productId === id && image.isVisible !== false && (!colour || !image.colourWayId || image.colourWayId === colour) && /^https:\/\/images\.asos-media\.com\/products\//.test(image.url)).map((image) => image.url);
+          } catch {
+          }
+        }
+      }
+      const rawImages = [...gallery, ...[product?.image].flat().filter(Boolean), meta["og:image"]].flat();
       for (const item of rawImages) {
         let image = typeof item === "string" ? item : item?.url || item?.contentUrl;
         if (!image) continue;

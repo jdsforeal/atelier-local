@@ -109,3 +109,11 @@ Limites : certains sites bloquent la lecture ; repli signalé sur les mots du li
 À l’ajout depuis un besoin du look, la catégorie validée dans la fiche détermine le besoin de destination : Haut rejoint les hauts même depuis le bouton + Bas. Le besoin choisi est conservé lorsqu’il correspond à la catégorie (y compris plusieurs besoins personnalisés de même catégorie). Sinon, le premier besoin compatible du même look est utilisé, ou créé s’il manque. Aucun déplacement vers un autre look.
 
 Le même contrôle est appliqué à la modification : réenregistrer une fiche mal classée corrige son rattachement. Les données existantes ne sont pas migrées silencieusement. Tests du modèle et des vrais callbacks de création/modification, puis suite complète.
+
+## Version 0.17.2 — plusieurs vues depuis un lien produit
+
+L’import ASOS lit la galerie JSON publiée pour le produit demandé et filtre les images masquées, les autres produits et les couleurs explicitement différentes. Aucun numéro de photo n’est inventé. Jusqu’à huit vues sont proposées sous forme de cases à cocher. La photo principale se choisit séparément parmi les vues cochées ; sinon la première vue cochée devient principale. Sans sélection, l’image existante reste inchangée.
+
+Les URLs choisies restent dans photos sur la pièce, la principale dans image. Le look affiche des miniatures permettant de changer la vue affichée sans modifier la fiche. Les exports existants et la présentation client continuent à utiliser la principale.
+
+Test réel sur le hoodie Bershka 211795376 : six photos récupérées, sélection des vues dos et face, face principale, passage entre les deux miniatures vérifié au navigateur sur une page isolée supprimée après test. Tests de sauvegarde de deux photos et filtrage des galeries/couleurs, suite complète passée. Fonction Supabase redéployée.

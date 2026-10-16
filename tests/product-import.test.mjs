@@ -13,3 +13,9 @@ const redirected=await fetchProduct(url,async()=>{calls++;return new Response(''
 const fallback=await fetchProduct(url,async()=>new Response('blocked',{status:403}));assert.equal(fallback.price,null);assert(fallback.notice.includes('capture'));
 const result=await fetchProduct(url,async()=>new Response(html,{headers:{'content-type':'text/html'}}));assert.equal(result.price,32.99);
 console.log('Import produit : données publiées, repli URL, prix du bon article, HTTPS, domaines et redirections vérifiés.');
+const galleryURL='https://www.asos.com/fr/bershka/hoodie/prd/211795376#colourWayId-211795377';
+const galleryJSON={productCode:'test',id:211795376,images:[1,2,3].map(i=>({productId:211795376,colourWayId:i===1?211795377:null,isVisible:true,url:`https://images.asos-media.com/products/hoodie/211795376-${i}`}))};
+galleryJSON.images.push({productId:123,isVisible:true,url:'https://images.asos-media.com/products/other/123-1'},{productId:211795376,colourWayId:999,isVisible:true,url:'https://images.asos-media.com/products/hoodie/211795376-other-colour'});
+const gallery=model.parseProductHTML(`<script>window.asos.pdp.config.product = ${JSON.stringify(galleryJSON)};</script>`,galleryURL);
+assert.equal(gallery.images.length,3,'Galerie entière du bon produit et de la bonne couleur');
+assert.equal(model.parseProductHTML(`<script>window.asos.pdp.config.product = ${JSON.stringify({...galleryJSON,id:123})};</script>`,galleryURL).images.length,0);

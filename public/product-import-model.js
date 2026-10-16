@@ -40,7 +40,13 @@ function parseProductHTML(html,url) {
   result.description=productText(product?.description||meta['og:description']||meta.description||'');
   const price=String(offer?.price??meta['product:price:amount']??'').replace(',','.');
   if(/^\d+(\.\d{1,2})?$/.test(price)&&Number.isFinite(Number(price))){result.price=Number(price);result.currency=String(offer?.priceCurrency||meta['product:price:currency']||'').toUpperCase();}
-  const rawImages=[...([product?.image].flat().filter(Boolean)),meta['og:image']].flat();
+  let gallery=[];
+  if(new URL(result.url).hostname.replace(/^www\./,'')==='asos.com'){
+    // JSON publié par ASOS pour ce produit : aucune exécution du script de la boutique.
+    const match=html.match(/window\.asos\.pdp\.config\.product\s*=\s*(\{"productCode"[^\n]+?\})\s*;/);
+    if(match){try{const detail=JSON.parse(match[1]);const id=Number(new URL(result.url).pathname.match(/\/prd\/(\d+)/)?.[1]);const colour=Number(new URL(result.url).hash.match(/colourWayId-(\d+)/)?.[1]);if(detail.id===id)gallery=(detail.images||[]).filter(image=>image.productId===id&&image.isVisible!==false&&(!colour||!image.colourWayId||image.colourWayId===colour)&&/^https:\/\/images\.asos-media\.com\/products\//.test(image.url)).map(image=>image.url);}catch{}}
+  }
+  const rawImages=[...gallery,...([product?.image].flat().filter(Boolean)),meta['og:image']].flat();
   for(const item of rawImages){let image=typeof item==='string'?item:item?.url||item?.contentUrl;if(!image)continue;try{image=new URL(image,result.url).href;}catch{continue;}image=productPublicURL(image);if(image&&!result.images.includes(image))result.images.push(image);if(result.images.length>=8)break;}
   if(product||cleanName||result.images.length){result.source=product?'product-data':'page';result.notice='Informations publiées par la boutique. Vérifiez la variante, le prix et le fournisseur avant enregistrement.';}
   return result;

@@ -24,7 +24,10 @@ ctx.updateSupplierSuggestions=()=>{};
 (async()=>{
  ctx.modal('Pièce','name="piecePhoto"',(data)=>db.pieces.push({...data,id:'new'}));
  await ctx.saved({brand:'Nouvelle marque',supplierName:'Nouveau loueur',contactName:'Presse'}, {elements:{}});
- const piece=db.pieces.at(-1);assert(piece.brandId);assert(piece.supplierId);assert.notEqual(piece.brandId,piece.supplierId);
+ ctx.modal('Pièce','name="piecePhoto"',(data)=>db.pieces.push({...data,id:'gallery'}));
+ await ctx.saved({brand:'Galerie',imageUrl:'https://shop.example/front.jpg'}, {elements:{},dataset:{productImages:JSON.stringify(['https://shop.example/front.jpg','https://shop.example/back.jpg'])}});
+ assert.equal(db.pieces.at(-1).photos.length,2);
+ const piece=db.pieces.find(p=>p.id==='new');assert(piece.brandId);assert(piece.supplierId);assert.notEqual(piece.brandId,piece.supplierId);
  assert.equal(db.suppliers.find(s=>s.id===piece.brandId).type,'Marque');assert.equal(db.contacts[0].supplierId,'brand','Le contact conserve sa structure originale');
  const size=db.suppliers.length;ctx.resolveSupplier(' nouvelle MARQUE ','Marque');assert.equal(db.suppliers.length,size,'Pas de doublon sur casse et espaces');
  ctx.modal('Pièce','name="piecePhoto"',(data)=>db.pieces.push({...data,id:'inline-piece',contact:db.contacts.find(c=>c.name===data.contactName)?.id}));
