@@ -40,6 +40,7 @@ async function prepareImageBatch(files) {
       originalImage,
       img,
       crop,
+      suggested: {...crop},
       useCrop: crop.w < 0.98 || crop.h < 0.98,
       file,
     });
@@ -47,25 +48,11 @@ async function prepareImageBatch(files) {
   return new Promise((resolve, reject) => {
     const dialog = document.createElement("dialog");
     dialog.className = "crop-dialog";
-    dialog.innerHTML = `<h2>Préparer vos images</h2><p>Cadrage assisté sur votre appareil : vérifiez le résultat, surtout pour les captures contenant du texte ou plusieurs produits. Les originaux sont conservés.</p><div class="toolbar"><button type="button" data-crop-all>Appliquer les cadrages proposés</button><button type="button" data-crop-none>Garder tous les originaux</button></div><div class="crop-batch">${records
-      .map(
-        (r, i) =>
-          `<article class="panel"><strong>${esc(r.file.name)}</strong><div class="crop-comparison"><img src="${r.originalImage}" alt="Original ${i + 1}"><canvas data-crop-preview="${i}" aria-label="Aperçu du cadrage ${i + 1}"></canvas></div><label><input type="checkbox" data-use-crop="${i}" ${r.useCrop ? "checked" : ""}> Utiliser le cadrage proposé</label>${[
-            ["x", "Gauche"],
-            ["y", "Haut"],
-            ["w", "Largeur"],
-            ["h", "Hauteur"],
-          ]
-            .map(
-              ([key, label]) =>
-                `<label>${label}<input type="range" min="${["w", "h"].includes(key) ? 5 : 0}" max="100" value="${Math.round(r.crop[key] * 100)}" data-crop-index="${i}" data-crop-key="${key}"></label>`,
-            )
-            .join("")}</article>`,
-      )
-      .join(
-        "",
-      )}</div><div class="toolbar"><button type="button" data-crop-cancel>Annuler l’import</button><button type="button" class="primary" data-crop-confirm>Valider les ${records.length} image(s)</button></div>`;
+    dialog.setAttribute("aria-label", "Rogner vos images");
+    dialog.innerHTML = `<div class="crop-heading"><div><span class="eyebrow">VOTRE IMAGE, BIEN CADRÉE</span><h2>Rogner vos images</h2></div><button type="button" data-crop-cancel aria-label="Annuler l’import">✕</button></div><p>Un cadrage automatique est proposé quand le produit est repérable. Déplacez le cadre, tirez ses poignées ou tracez une nouvelle sélection. Sur téléphone, utilisez le doigt.</p><p class="note">L’analyse reste sur cet appareil. Vérifiez la proposition : les captures complexes peuvent nécessiter un ajustement. Les originaux sont conservés.</p>${records.length>1?'<div class="toolbar"><button type="button" data-crop-all>Tout recadrer automatiquement</button><button type="button" data-crop-none>Garder tous les originaux</button></div>':''}<div class="crop-batch">${records.map((r,i)=>
+      `<article class="panel crop-card"><div class="crop-card-heading"><strong>${esc(r.file.name)}</strong><span>${i+1} / ${records.length}</span></div><div class="crop-workspace"><div class="crop-source"><div class="crop-stage" data-crop-stage="${i}" style="aspect-ratio:${r.img.width}/${r.img.height};width:min(100%,${Math.round(300*r.img.width/r.img.height)}px)"><img draggable="false" src="${r.originalImage}" alt="Image à cadrer : ${esc(r.file.name)}"><div class="crop-selection" tabindex="0" role="group"><span class="crop-thirds" aria-hidden="true"></span>${['nw','n','ne','e','se','s','sw','w'].map(direction=>`<button type="button" class="crop-handle crop-handle-${direction}" data-crop-handle="${direction}" aria-label="Redimensionner le cadre : ${{nw:'haut gauche',n:'haut',ne:'haut droite',e:'droite',se:'bas droite',s:'bas',sw:'bas gauche',w:'gauche'}[direction]}"></button>`).join('')}</div></div><p class="crop-help">Glissez au centre pour déplacer · Tirez les bords pour rogner</p></div><div class="crop-result"><span class="eyebrow">APERÇU DU RÉSULTAT</span><canvas data-crop-preview="${i}" aria-label="Aperçu du cadrage ${i+1}"></canvas><p data-crop-size="${i}" aria-live="polite"></p><button type="button" data-crop-auto="${i}">⌖ Cadrage automatique</button><button type="button" data-crop-original="${i}">Revenir à l’original</button><p class="crop-help">Au clavier : flèches pour ajuster, Maj pour aller plus vite.</p></div></div></article>`).join('')}</div><div class="toolbar"><button type="button" data-crop-cancel>Annuler</button><button type="button" class="primary" data-crop-confirm>${records.length===1?'Utiliser cette image':`Valider les ${records.length} images`}</button></div>`;
     document.body.append(dialog);
+    const redraws = [];
     const paint = (index) => {
       const r = records[index],
         canvas = dialog.querySelector(`[data-crop-preview="${index}"]`);
@@ -75,6 +62,8 @@ async function prepareImageBatch(files) {
       c.fillStyle = "#f6f4ee";
       c.fillRect(0, 0, 320, 320);
       const b = r.useCrop ? r.crop : { x: 0, y: 0, w: 1, h: 1 };
+      redraws[index]?.();
+      dialog.querySelector(`[data-crop-size="${index}"]`).textContent = `${Math.round(r.img.width*b.w)} × ${Math.round(r.img.height*b.h)} px · ${r.useCrop?'Recadrée':'Image entière'}`;
       const w = r.img.width * b.w,
         h = r.img.height * b.h,
         scale = Math.min(320 / w, 320 / h);
@@ -90,7 +79,7 @@ async function prepareImageBatch(files) {
         h * scale,
       );
     };
-    records.forEach((r, i) => paint(i));
+    records.forEach((r,i)=>{redraws[i]=bindCropEditor(dialog.querySelector(`[data-crop-stage="${i}"]`),r,()=>paint(i));paint(i);});
     const finish = () => {
       dialog.close();
       dialog.remove();
@@ -100,34 +89,9 @@ async function prepareImageBatch(files) {
       finish();
       reject(Error("Import annulé."));
     });
-    dialog.addEventListener("input", (event) => {
-      if (event.target.dataset.cropIndex === undefined) return;
-      const i = Number(event.target.dataset.cropIndex),
-        r = records[i],
-        key = event.target.dataset.cropKey;
-      r.crop[key] = Number(event.target.value) / 100;
-      r.crop.w = Math.min(r.crop.w, 1 - r.crop.x);
-      r.crop.h = Math.min(r.crop.h, 1 - r.crop.y);
-      if (r.crop.w < 0.05) {
-        r.crop.x = 0.95;
-        r.crop.w = 0.05;
-      }
-      if (r.crop.h < 0.05) {
-        r.crop.y = 0.95;
-        r.crop.h = 0.05;
-      }
-      r.useCrop = true;
-      dialog.querySelector(`[data-use-crop="${i}"]`).checked = true;
-      paint(i);
-    });
-    dialog.addEventListener("change", (event) => {
-      if (event.target.dataset.useCrop !== undefined) {
-        const i = Number(event.target.dataset.useCrop);
-        records[i].useCrop = event.target.checked;
-        paint(i);
-      }
-    });
     dialog.addEventListener("click", (event) => {
+      const auto = event.target.closest('[data-crop-auto]'), original = event.target.closest('[data-crop-original]');
+      if(auto||original){const i=Number(auto?.dataset.cropAuto??original.dataset.cropOriginal);records[i].useCrop=!!auto;if(auto)records[i].crop={...records[i].suggested};paint(i);}
       if (
         event.target.hasAttribute("data-crop-all") ||
         event.target.hasAttribute("data-crop-none")
@@ -135,7 +99,7 @@ async function prepareImageBatch(files) {
         const enabled = event.target.hasAttribute("data-crop-all");
         records.forEach((r, i) => {
           r.useCrop = enabled;
-          dialog.querySelector(`[data-use-crop="${i}"]`).checked = enabled;
+          if(enabled)r.crop={...r.suggested};
           paint(i);
         });
       }

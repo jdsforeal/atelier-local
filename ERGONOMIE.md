@@ -55,3 +55,11 @@ Un laboratoire sans réseau reprend un brouillon fournisseur et permet de simule
 Le service Gmail local impose le propriétaire du studio, un jeton Atelier valide, un projet actif et accessible, et une liste exacte de destinataires de test. Ces contrôles précèdent chaque envoi et relance. Les objets commencent par [TEST ATELIER]. Les identifiants OAuth et jetons sont conservés hors du dépôt, dans une configuration privée ; aucun secret dans le code public. Les envois sont suspendus si la session Atelier expire ou si le projet devient inaccessible. Le service local doit rester lancé : ce n’est pas une infrastructure permanente.
 
 Gmail API activée par le propriétaire le 16 octobre. Le client OAuth local reste à créer/importer ; aucune autorisation Gmail ni transmission réelle effectuée. La console Google du navigateur de travail échoue au chargement des clients. Tests de droits, transport, moteur navigateur et suite du pilote réussis.
+
+## Version 0.16.1 — cadrage visuel
+
+Les quatre curseurs sont remplacés par un cadre sur l’image : déplacement à la souris ou au doigt, huit poignées, tracé d’une nouvelle sélection et réglage au clavier (flèches, Maj pour un pas plus large). Un aperçu se met à jour pendant le geste. La proposition automatique locale existante est conservée, réappliquable par image ou en lot ; revenir à l’original est toujours possible. L’analyse visuelle reste heuristique, sans service IA ni coût, et peut ne rien rogner si le produit est ambigu.
+
+Le composant est utilisé par prepareImageBatch, donc par les imports de pièces, options, couvertures, studio et inspirations déjà raccordés à ce parcours. Les originaux et métadonnées restent conservés. Vérification navigateur isolée avec un vrai fichier de démonstration : proposition, poignée à la souris, déplacement du cadre et retour à l’original. Tests des limites et taille minimale sur les huit poignées. Le tactile utilise Pointer Events ; essai physique sur téléphone restant à faire. Aucun projet privé modifié pendant cette vérification.
+
+Gmail : le propriétaire a confirmé la connexion en mode essais limités par capture de l’interface. Aucun envoi réel ni suivi de réponse n’a été vérifié pendant cette étape de cadrage.
