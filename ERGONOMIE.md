@@ -63,3 +63,9 @@ Les quatre curseurs sont remplacés par un cadre sur l’image : déplacement à
 Le composant est utilisé par prepareImageBatch, donc par les imports de pièces, options, couvertures, studio et inspirations déjà raccordés à ce parcours. Les originaux et métadonnées restent conservés. Vérification navigateur isolée avec un vrai fichier de démonstration : proposition, poignée à la souris, déplacement du cadre et retour à l’original. Tests des limites et taille minimale sur les huit poignées. Le tactile utilise Pointer Events ; essai physique sur téléphone restant à faire. Aucun projet privé modifié pendant cette vérification.
 
 Gmail : le propriétaire a confirmé la connexion en mode essais limités par capture de l’interface. Aucun envoi réel ni suivi de réponse n’a été vérifié pendant cette étape de cadrage.
+
+## Version 0.16.2 — cadrage des captures de boutiques
+
+Remplacement du seuil global par deux étapes locales : recherche de grandes zones neutres compatibles avec une photo, puis recherche du sujet contrasté principal par composantes connexes. Les bandes pleine largeur, petits caractères et miniatures ne sont plus regroupés avec le produit. Les marges horizontales et verticales dépendent des dimensions du sujet. L’échantillon passe à 480 pixels de large maximum ; aucun appel IA ni transfert réseau. Une explication accompagne la proposition ou l’absence de détection.
+
+Test sur la capture ASOS fournie, hors du dépôt, avant et après réduction/compression : la grande chaussure est isolée, menu, textes, miniatures et badge exclus. L’image réelle n’est pas incluse dans les fichiers publics ou les tests du dépôt. Des scènes synthétiques vérifient photo décentrée, navigation, miniatures, texte, image vide et objet coupé. Le précédent test de produit simple reste réussi. Ce traitement n’identifie pas sémantiquement un vêtement : fonds complexes, produits très clairs, sujets multiples ou séparés peuvent nécessiter un ajustement manuel.
