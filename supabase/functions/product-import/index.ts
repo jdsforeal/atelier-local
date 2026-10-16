@@ -46,11 +46,33 @@ var require_product_import_model = __commonJS({
         return cp <= 1114111 ? String.fromCodePoint(cp) : "";
       }).replace(/&#(\d+);/g, (_, n) => Number(n) <= 1114111 ? String.fromCodePoint(Number(n)) : "").replace(/&(amp|quot|apos|lt|gt|nbsp);/g, (_, n) => ({ amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " " })[n]).replace(/\s+/g, " ").trim().slice(0, 2e3);
     }
+    var PRODUCT_SHOPS = [
+      { hosts: ["asos.com", "www.asos.com"], name: "ASOS", ownBrand: false },
+      { hosts: ["zalando.fr", "www.zalando.fr", "zalando.be", "www.zalando.be", "fr.zalando.be", "nl.zalando.be", "zalando.de", "www.zalando.de", "zalando.nl", "www.zalando.nl"], name: "Zalando", ownBrand: false },
+      { hosts: ["chanel.com", "www.chanel.com"], name: "Chanel", ownBrand: true },
+      { hosts: ["mango.com", "www.mango.com", "shop.mango.com"], name: "Mango", ownBrand: true },
+      { hosts: ["hm.com", "www.hm.com", "www2.hm.com"], name: "H&M", ownBrand: true },
+      { hosts: ["zara.com", "www.zara.com"], name: "Zara", ownBrand: true },
+      { hosts: ["uniqlo.com", "www.uniqlo.com"], name: "Uniqlo", ownBrand: true },
+      { hosts: ["sezane.com", "www.sezane.com"], name: "S\xE9zane", ownBrand: true },
+      { hosts: ["massimodutti.com", "www.massimodutti.com"], name: "Massimo Dutti", ownBrand: true },
+      { hosts: ["maje.com", "www.maje.com", "fr.maje.com", "be.maje.com"], name: "Maje", ownBrand: true },
+      { hosts: ["cos.com", "www.cos.com"], name: "COS", ownBrand: true },
+      { hosts: ["arket.com", "www.arket.com"], name: "Arket", ownBrand: true }
+    ];
+    function productShop2(value) {
+      try {
+        return PRODUCT_SHOPS.find((shop) => shop.hosts.includes(new URL(value).hostname));
+      } catch {
+        return void 0;
+      }
+    }
     function productFromURL2(value) {
       const valid = productPublicURL(value);
       if (!valid) throw Error("Collez un lien https vers une fiche produit.");
       const url = new URL(valid), host = url.hostname.replace(/^www\./, "");
-      let name = "", brand = "", supplier = "";
+      const shop = productShop2(valid);
+      let name = "", brand = shop?.ownBrand ? shop.name : "", supplier = shop?.name || "";
       const segments = url.pathname.split("/").filter(Boolean).map((s) => {
         try {
           return decodeURIComponent(s);
@@ -59,7 +81,6 @@ var require_product_import_model = __commonJS({
         }
       });
       if (host === "asos.com") {
-        supplier = "ASOS";
         const index = segments.indexOf("prd");
         if (index >= 2) {
           brand = segments[index - 2].replace(/-/g, " ");
@@ -68,22 +89,76 @@ var require_product_import_model = __commonJS({
           name = (slug.startsWith(prefix) ? slug.slice(prefix.length) : slug).replace(/-/g, " ");
         }
       } else {
-        const shops2 = { "zara.com": "Zara", "hm.com": "H&M", "mango.com": "Mango", "arket.com": "Arket", "cos.com": "COS", "uniqlo.com": "Uniqlo", "sezane.com": "S\xE9zane" };
-        supplier = shops2[host] || "";
-        const slug = segments.at(-1)?.replace(/\.(html?|aspx)$/i, "") || "";
-        if (slug.includes("-") && !/^\d+$/.test(slug)) name = slug.replace(/-/g, " ");
+        const productIndex = segments.indexOf("product");
+        let slug = productIndex >= 0 ? segments[productIndex + 1] || "" : segments.at(-1) || "";
+        if (shop?.name === "Mango") slug = [...segments].reverse().find((s) => s.includes("-")) || "";
+        slug = slug.replace(/\.(html?|aspx)$/i, "").replace(/-(?:p\d{6,}|l\d{6,}|[a-z0-9]{8,}-[a-z0-9]{3})$/i, "");
+        if (slug.includes("-") && !/^\d+$/.test(slug) && !/^(?:productpage\.|[a-z]+\d)/i.test(slug)) name = slug.replace(/-/g, " ");
       }
       name = name ? name[0].toLocaleUpperCase("fr") + name.slice(1) : "";
       if (brand && !/^\d+$/.test(brand)) brand = brand.split(" ").map((w) => w[0]?.toUpperCase() + w.slice(1)).join(" ");
       return { url: valid, name, brand, supplier, description: "", price: null, currency: "", images: [], source: "url", notice: "Propositions d\xE9duites du lien : nom et marque \xE0 v\xE9rifier. Aucun prix ni photo r\xE9cup\xE9r\xE9." };
+    }
+    function productAssignedJSON(html, marker) {
+      const start = html.indexOf(marker);
+      if (start < 0) return null;
+      const eq = html.indexOf("=", start + marker.length);
+      if (eq < 0 || eq - start > marker.length + 10) return null;
+      let first = eq + 1;
+      while (/\s/.test(html[first] || "") && first < html.length) first++;
+      if (html[first] !== "{") return null;
+      let depth = 0, quoted = false, escaped = false;
+      for (let i = first; i < html.length; i++) {
+        const c = html[i];
+        if (quoted) {
+          if (escaped) escaped = false;
+          else if (c === "\\") escaped = true;
+          else if (c === '"') quoted = false;
+          continue;
+        }
+        if (c === '"') quoted = true;
+        else if (c === "{") depth++;
+        else if (c === "}" && --depth === 0) {
+          try {
+            return JSON.parse(html.slice(first, i + 1));
+          } catch {
+            return null;
+          }
+        }
+      }
+      return null;
+    }
+    function productSchemaType(node, type) {
+      return [node?.["@type"]].flat().some((value) => typeof value === "string" && value.split(/[\/#]/).at(-1) === type);
+    }
+    function productURLKey(value, base) {
+      try {
+        const u = new URL(value, base);
+        return u.origin + u.pathname.replace(/\/$/, "");
+      } catch {
+        return "";
+      }
+    }
+    function productOffer(offers, url) {
+      const all = [offers].flat().filter(Boolean).flatMap((o) => productSchemaType(o, "AggregateOffer") ? [o.offers].flat().filter(Boolean) : [o]);
+      const exact = all.find((o) => {
+        try {
+          return o.url && new URL(o.url, url).href === url;
+        } catch {
+          return false;
+        }
+      });
+      if (exact) return exact;
+      const unique = new Set(all.map((o) => String(o.price ?? o.priceSpecification?.price) + ":" + String(o.priceCurrency ?? o.priceSpecification?.priceCurrency)));
+      return unique.size === 1 ? all[0] : void 0;
     }
     function parseProductHTML2(html, url) {
       const result = productFromURL2(url), meta = {};
       for (const tag of html.match(/<meta\b[^>]*>/gi) || []) {
         const attrs = {};
         for (const m of tag.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g)) attrs[m[1].toLowerCase()] = m[2] ?? m[3] ?? m[4];
-        const key = attrs.property || attrs.name;
-        if (key && attrs.content) meta[key.toLowerCase()] = productText(attrs.content);
+        const key2 = attrs.property || attrs.name;
+        if (key2 && attrs.content) meta[key2.toLowerCase()] = productText(attrs.content);
       }
       const products = [];
       function collect(node, depth = 0) {
@@ -93,18 +168,30 @@ var require_product_import_model = __commonJS({
           return;
         }
         if (typeof node !== "object") return;
-        const type = [node["@type"]].flat();
-        if (type.includes("Product")) products.push(node);
+        if (productSchemaType(node, "Product") || productSchemaType(node, "ProductGroup")) products.push(node);
         if (node["@graph"]) collect(node["@graph"], depth + 1);
         if (node.mainEntity) collect(node.mainEntity, depth + 1);
       }
       for (const script of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) if (/type\s*=\s*["']application\/ld\+json["']/i.test(script[1])) {
         try {
-          collect(JSON.parse(script[2]));
+          collect(JSON.parse(script[2].trim().replace(/^<!\[CDATA\[/, "").replace(/\]\]>$/, "")));
         } catch {
         }
       }
-      const product = products[0], offer = Array.isArray(product?.offers) ? product.offers[0] : product?.offers;
+      const key = productURLKey(url, url);
+      let product = products.find((p) => productURLKey(p.url || p["@id"], url) === key) || (products.length === 1 ? products[0] : void 0);
+      let ambiguousPrice = false;
+      if (productSchemaType(product, "ProductGroup")) {
+        const variants = [product.hasVariant].flat().filter((v) => v && typeof v === "object" && productURLKey(v.url || v["@id"], url) === key);
+        const requested = new URL(url).searchParams.get("size");
+        const variant = requested ? variants.find((v) => String(v.size) === requested) : variants.find((v) => /\/InStock$/.test(v.offers?.availability || "")) || variants[0];
+        const prices = new Set(variants.map((v) => JSON.stringify([v.offers?.price, v.offers?.priceCurrency])));
+        ambiguousPrice = requested ? !variant : prices.size > 1;
+        product = { ...product, ...variant, brand: variant?.brand || product.brand, image: variant?.image || product.image, offers: requested ? variant?.offers : prices.size === 1 ? variant?.offers : product.offers };
+      }
+      const offer = productOffer(product?.offers, url);
+      const title = productText(meta["og:title"] || html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "");
+      if (/^(access denied|just a moment|robot|security check|vercel security|page not found|404|page introuvable|enable javascript|attention required)/i.test(title)) return { ...result, reason: "blocked", notice: "La boutique bloque la lecture automatique. Les propositions viennent seulement du lien. Ajoutez une capture pour compl\xE9ter." };
       if (new URL(result.url).hostname.replace(/^www\./, "") === "asos.com") {
         const id = Number(new URL(result.url).pathname.match(/\/prd\/(\d+)/)?.[1]);
         const stock = html.match(/stockPriceResponse\s*=\s*'([^']+)'/);
@@ -120,15 +207,16 @@ var require_product_import_model = __commonJS({
           }
         }
       }
-      const cleanName = productText(product?.name || meta["og:title"] || "").replace(/\s*[|–]\s*ASOS\s*$/i, "");
+      if (!product && /\/(?:c|collection|collections|catalogue-par-produit)\/|-[ln]\d+\.html(?:$|\?)/i.test(url)) return { ...result, reason: "not-product", name: "", notice: "Ce lien semble ouvrir une collection, pas une fiche produit. Ouvrez un article pr\xE9cis et copiez son lien." };
+      const cleanName = productText(product?.name || meta["og:title"] || "").replace(/\s*(?:[|–]\s*(?:ASOS|UNIQLO.*|ZARA.*|Maje.*)|-\s*ZALANDO\.[A-Z]+)\s*$/i, "");
       if (cleanName) result.name = cleanName;
       const brand = productText(typeof product?.brand === "string" ? product.brand : product?.brand?.name);
       if (brand) result.brand = brand;
       result.description = productText(product?.description || meta["og:description"] || meta.description || "");
-      const price = String(offer?.price ?? meta["product:price:amount"] ?? "").replace(",", ".");
+      const price = String(offer?.price ?? offer?.priceSpecification?.price ?? (ambiguousPrice ? "" : meta["product:price:amount"] ?? meta["og:price:amount"]) ?? "").replace(",", ".");
       if (/^\d+(\.\d{1,2})?$/.test(price) && Number.isFinite(Number(price))) {
         result.price = Number(price);
-        result.currency = String(offer?.priceCurrency || meta["product:price:currency"] || "").toUpperCase();
+        result.currency = String(offer?.priceCurrency || offer?.priceSpecification?.priceCurrency || meta["product:price:currency"] || meta["og:price:currency"] || "").toUpperCase();
       }
       let gallery = [];
       if (new URL(result.url).hostname.replace(/^www\./, "") === "asos.com") {
@@ -143,7 +231,31 @@ var require_product_import_model = __commonJS({
           }
         }
       }
+      if (productShop2(url)?.name === "Uniqlo") {
+        const state = productAssignedJSON(html, "window.__PRELOADED_STATE__");
+        const id = new URL(url).pathname.match(/\/products\/(E\d+-\d+)/)?.[1];
+        const detail = Object.values(state?.entity?.pdpEntity || {}).map((x) => x.product).find((p) => p?.productId === id);
+        if (detail) {
+          const requested = new URL(url).searchParams.get("colorDisplayCode");
+          const colour = requested || detail.representative?.color?.displayCode;
+          const main = detail.images?.main?.[colour];
+          gallery = [main?.image, ...(main?.model || []).map((x) => typeof x === "string" ? x : x.image || x.imageUrl)].filter(Boolean);
+          if (requested && !main) gallery = [];
+          result.name = productText(detail.name) || result.name;
+          result.brand = "Uniqlo";
+          result.description = productText([detail.shortDescription, detail.longDescription, detail.composition].filter(Boolean).join(" "));
+          const current = detail.prices?.promo || detail.prices?.base;
+          if (typeof current?.value === "number" && Number.isFinite(current.value) && current.value >= 0) {
+            result.price = current.value;
+            result.currency = String(current.currency?.code || "");
+          }
+          if (gallery.length || requested) delete meta["og:image"];
+          product = detail;
+        }
+      }
+      if (productShop2(url)?.ownBrand) result.brand = productShop2(url).name;
       const rawImages = [...gallery, ...[product?.image].flat().filter(Boolean), meta["og:image"]].flat();
+      const imageKeys = /* @__PURE__ */ new Set();
       for (const item of rawImages) {
         let image = typeof item === "string" ? item : item?.url || item?.contentUrl;
         if (!image) continue;
@@ -153,32 +265,52 @@ var require_product_import_model = __commonJS({
           continue;
         }
         image = productPublicURL(image);
-        if (image && !result.images.includes(image)) result.images.push(image);
+        if (image) {
+          const asset = new URL(image);
+          let key2 = image;
+          if (asset.hostname === "img01.ztat.net") {
+            asset.searchParams.delete("imwidth");
+            key2 = asset.href;
+          } else if (/\.maje\.com$/.test(asset.hostname)) key2 = asset.pathname.replace(/^.*?\/on\//, "/on/");
+          if (!imageKeys.has(key2)) {
+            imageKeys.add(key2);
+            result.images.push(image);
+          }
+        }
         if (result.images.length >= 8) break;
       }
       if (product || cleanName || result.images.length) {
         result.source = product ? "product-data" : "page";
         result.notice = "Informations publi\xE9es par la boutique. V\xE9rifiez la variante, le prix et le fournisseur avant enregistrement.";
       }
+      if (result.source === "url") result.reason = "no-product-data";
+      else if (!result.name || !result.images.length || result.price === null) {
+        result.reason = "partial";
+        result.notice = "Lecture partielle : certaines informations ne sont pas publi\xE9es ou accessibles. Compl\xE9tez les champs manquants et v\xE9rifiez la variante.";
+      }
       return result;
     }
-    if (typeof module !== "undefined") module.exports = { productPublicURL, productText, productFromURL: productFromURL2, parseProductHTML: parseProductHTML2 };
+    if (typeof module !== "undefined") module.exports = { PRODUCT_SHOPS, productShop: productShop2, productPublicURL, productText, productFromURL: productFromURL2, parseProductHTML: parseProductHTML2 };
   }
 });
 
 // product-import/fetch-product.mjs
 var import_product_import_model = __toESM(require_product_import_model(), 1);
-var { parseProductHTML, productFromURL } = import_product_import_model.default;
-var shops = /* @__PURE__ */ new Set(["asos.com", "www.asos.com", "www.zara.com", "www2.hm.com", "www.mango.com", "shop.mango.com", "www.arket.com", "www.cos.com", "www.uniqlo.com", "www.sezane.com"]);
+var { parseProductHTML, productFromURL, productShop } = import_product_import_model.default;
 async function fetchProduct(value, request = fetch) {
   const fallback = productFromURL(value);
   let url = new URL(fallback.url);
   url.hash = "";
-  if (!shops.has(url.hostname)) return { ...fallback, notice: fallback.notice + " Cette boutique n\u2019est pas encore prise en charge pour la lecture compl\xE8te." };
+  let reason = "network";
+  if (!productShop(url)) return { ...fallback, reason: "unsupported-shop", notice: fallback.notice + " Cette boutique n\u2019est pas encore prise en charge pour la lecture compl\xE8te. Vous pouvez ajouter une capture." };
   try {
+    const signal = AbortSignal.timeout(12e3);
     for (let redirects = 0; redirects < 4; redirects++) {
-      if (!shops.has(url.hostname) || url.protocol !== "https:" || url.port || url.username || url.password) throw Error("Destination refus\xE9e.");
-      const response = await request(url.href, { redirect: "manual", signal: AbortSignal.timeout(1e4), headers: { Accept: "text/html", "Accept-Language": "fr-FR,fr;q=0.9" } });
+      if (!productShop(url) || url.protocol !== "https:" || url.port || url.username || url.password) {
+        reason = "redirect-refused";
+        throw Error("Destination refus\xE9e.");
+      }
+      const response = await request(url.href, { redirect: "manual", signal, headers: { Accept: "text/html", "Accept-Language": "fr-FR,fr;q=0.9" } });
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         const location = response.headers.get("location");
         if (!location) throw Error("Redirection sans destination.");
@@ -187,6 +319,7 @@ async function fetchProduct(value, request = fetch) {
         continue;
       }
       if (!response.ok || !response.headers.get("content-type")?.includes("text/html")) {
+        reason = [403, 429].includes(response.status) ? "blocked" : [404, 410].includes(response.status) ? "unavailable" : "network";
         await response.body?.cancel();
         throw Error("Page inaccessible.");
       }
@@ -197,7 +330,8 @@ async function fetchProduct(value, request = fetch) {
         const { done, value: value2 } = await reader.read();
         if (done) break;
         length += value2.length;
-        if (length > 2e6) {
+        if (length > 3e6) {
+          reason = "too-large";
           await reader.cancel();
           throw Error("Page trop volumineuse.");
         }
@@ -210,11 +344,15 @@ async function fetchProduct(value, request = fetch) {
         offset += chunk.length;
       }
       const html = new TextDecoder().decode(bytes);
-      return parseProductHTML(html, fallback.url);
+      const data = parseProductHTML(html, fallback.url);
+      if (data.source === "url" && data.reason === "no-product-data") data.notice = "La page ne fournit pas de fiche produit exploitable au lecteur (page dynamique ou article retir\xE9). Seules les informations du lien sont propos\xE9es. Ajoutez une capture pour compl\xE9ter.";
+      return data;
     }
     throw Error("Trop de redirections.");
-  } catch {
-    return { ...fallback, notice: fallback.notice + " La boutique n\u2019a pas permis la lecture de sa page. Vous pouvez importer une capture \xE0 la place." };
+  } catch (error) {
+    if (error?.name === "TimeoutError" || error?.name === "AbortError") reason = "timeout";
+    const notices = { blocked: "La boutique bloque la lecture automatique.", unavailable: "Cet article est introuvable ou retir\xE9 de la boutique.", timeout: "La boutique met trop de temps \xE0 r\xE9pondre.", "redirect-refused": "Le lien redirige vers une destination non prise en charge.", "too-large": "La page d\xE9passe la taille de lecture autoris\xE9e.", network: "La boutique est momentan\xE9ment inaccessible au lecteur." };
+    return { ...fallback, reason, notice: (notices[reason] || notices.network) + " Les propositions viennent seulement du lien ; aucun prix ni photo r\xE9cup\xE9r\xE9. Vous pouvez importer une capture \xE0 la place." };
   }
 }
 

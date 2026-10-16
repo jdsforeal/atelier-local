@@ -1,0 +1,36 @@
+{
+  "@context": "https://schema.org/",
+  "@type": "ProductGroup",
+  "url": "https://www.zalando.fr/faconnable-chemise-white-fa822d0bt-a11.html",
+  "name": "REGULAR FIT - Chemise - white",
+  "brand": {
+    "@type": "Brand",
+    "name": "Façonnable"
+  },
+  "image": [
+    "https://img01.ztat.net/article/spp-media-p1/fd79ebcbb5ce4db5b51ec61aea85eb60/1c537828615a4259b724949b21fc5874.jpg?imwidth=200",
+    "https://img01.ztat.net/article/spp-media-p1/ce559ea9afbe4de3b19db0c42307d0a0/3ec2c5ccc5ad4e889d9e163141cab861.jpg?imwidth=200"
+  ],
+  "hasVariant": [
+    {
+      "@type": "Product",
+      "url": "https://www.zalando.fr/faconnable-chemise-white-fa822d0bt-a11.html?size=XL",
+      "size": "XL",
+      "offers": {
+        "price": "84",
+        "priceCurrency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "@type": "Product",
+      "url": "https://www.zalando.fr/faconnable-chemise-white-fa822d0bt-a11.html?size=3XL",
+      "size": "3XL",
+      "offers": {
+        "price": "84",
+        "priceCurrency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    }
+  ]
+}

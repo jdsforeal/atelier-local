@@ -117,3 +117,13 @@ L’import ASOS lit la galerie JSON publiée pour le produit demandé et filtre 
 Les URLs choisies restent dans photos sur la pièce, la principale dans image. Le look affiche des miniatures permettant de changer la vue affichée sans modifier la fiche. Les exports existants et la présentation client continuent à utiliser la principale.
 
 Test réel sur le hoodie Bershka 211795376 : six photos récupérées, sélection des vues dos et face, face principale, passage entre les deux miniatures vérifié au navigateur sur une page isolée supprimée après test. Tests de sauvegarde de deux photos et filtrage des galeries/couleurs, suite complète passée. Fonction Supabase redéployée.
+
+## Version 0.17.3 — audit de dix boutiques et lecture structurée
+
+Audit réseau réel : ASOS (nom/marque/prix, 6 vues), Zalando (Façonnable, prix 84 €, 7 vues), Uniqlo (39,90 €, couleur blanche du lien, 1 vue), Maje (295 €, 1 vue sans doublon) ont fourni leurs informations. Ce sont des valeurs du test, jamais des constantes de l’import. Chanel, Mango, H&M, Sézane ont refusé le lecteur (403/429). Zara et Massimo Dutti ont fourni une coquille sans données produit exploitables. Ces six cas restent des imports limités au lien.
+
+Le lecteur standard comprend ProductGroup avec variantes, URLs et tailles, offres et priceSpecification. Les recommandations et prix ambigus de variantes ne doivent pas être pris pour le produit demandé. Uniqlo utilise son JSON publié pour le produit et la couleur du lien, sans exécuter le script. Les domaines autorisés sont centralisés et limités à des boutiques connues, y compris Zalando France/Belgique/Allemagne/Pays-Bas et les boutiques demandées. Les autres boutiques restent en lecture du lien.
+
+L’interface distingue lecture limitée, partielle et fiche récupérée ; messages selon blocage, article retiré, délai ou redirection refusée, lien Ouvrir la fiche. Aucun prix/photo n’est fabriqué au repli. Le nom et la boutique lisibles du lien peuvent toujours être proposés, clairement signalés comme tels. Limite : aucun import universel garanti ni OCR ; protections des sites et différences local/cloud subsistent.
+
+Contrôles : fixtures publiques minimales Zalando/Uniqlo, dix hôtes, mauvaises variantes, domaine trompeur, refus HTTP, page collection, recommandations et régressions. `npm run test:product-shops` exécute le contrôle réseau manuel des dix URLs (hors suite automatique). Rapport du test conservé dans les outputs de la conversation.

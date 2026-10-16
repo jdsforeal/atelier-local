@@ -1,0 +1,87 @@
+{
+  "entity": {
+    "pdpEntity": {
+      "fixture": {
+        "product": {
+          "productId": "E456590-000",
+          "name": "Chemise Slim Sans Repassage",
+          "composition": "100% Coton",
+          "prices": {
+            "base": {
+              "currency": {
+                "code": "EUR",
+                "symbol": "€"
+              },
+              "value": 39.9
+            },
+            "promo": null,
+            "isDualPrice": false,
+            "taxPolicy": "INCLUSIVE"
+          },
+          "images": {
+            "main": {
+              "60": {
+                "image": "https://image.uniqlo.com/UQ/ST3/WesternCommon/imagesgoods/456590/item/goods_60_456590_3x4.jpg",
+                "model": [],
+                "productCombinations": [],
+                "showProductsInImageLink": false
+              },
+              "00": {
+                "image": "https://image.uniqlo.com/UQ/ST3/WesternCommon/imagesgoods/456590/item/goods_00_456590_3x4.jpg",
+                "model": [],
+                "productCombinations": [],
+                "showProductsInImageLink": false
+              },
+              "09": {
+                "image": "https://image.uniqlo.com/UQ/ST3/WesternCommon/imagesgoods/456590/item/goods_09_456590_3x4.jpg",
+                "model": [],
+                "productCombinations": [],
+                "showProductsInImageLink": false
+              }
+            },
+            "sub": []
+          },
+          "representative": {
+            "color": {
+              "code": "COL60",
+              "displayCode": "60",
+              "name": "BLEU CLAIR",
+              "display": {
+                "showFlag": true,
+                "chipType": 1
+              },
+              "filterCode": "BLUE"
+            },
+            "communicationCode": "475907-60-002-000",
+            "l2Id": "07375408",
+            "pld": {
+              "code": "PTB000",
+              "displayCode": "000",
+              "name": "-",
+              "display": {
+                "showFlag": false,
+                "chipType": 0
+              }
+            },
+            "sales": true,
+            "salesType": "NORMAL",
+            "searchInStoresAvailable": true,
+            "size": {
+              "code": "SMA002",
+              "displayCode": "002",
+              "name": "XS",
+              "display": {
+                "showFlag": true,
+                "chipType": 0
+              }
+            },
+            "flags": {
+              "priceFlags": [],
+              "productFlags": []
+            }
+          }
+        }
+      }
+    }
+  }
+}
