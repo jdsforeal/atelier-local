@@ -9,7 +9,9 @@ import {
 import { readFileSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { addJobs, processAccount } from "./core.mjs";
+import { mailRecipientGuard, guardMailTransport } from "./safety.mjs";
 const env = process.env;
+const assertRecipient=mailRecipientGuard(env.MAIL_MODE || "sandbox",env.MAIL_TEST_RECIPIENTS || "");
 for (const key of [
   "GOOGLE_CLIENT_ID",
   "GOOGLE_CLIENT_SECRET",
@@ -132,7 +134,7 @@ async function tick() {
         delete account.connectionError;
         await processAccount(
           account,
-          {
+          guardMailTransport({
             send: (body) =>
               gmail(token.access_token, "messages/send", {
                 method: "POST",
@@ -145,7 +147,7 @@ async function tick() {
                   encodeURIComponent(id) +
                   "?format=metadata&metadataHeaders=From&metadataHeaders=Message-ID",
               ),
-          },
+          },assertRecipient),
           persist,
         );
       } catch {
@@ -339,6 +341,8 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/api/mail/send" && req.method === "POST") {
       const input = await body(req);
       if (input.confirmed !== true) throw Error("Validation du lot requise.");
+      if(!Array.isArray(input.messages))throw Error("Liste de messages requise.");
+      input.messages.forEach(message=>assertRecipient(message.recipient));
       addJobs(account, input.messages);
       persist();
       reply(res, 202, summary(account));

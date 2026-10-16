@@ -202,6 +202,7 @@ async function cloudLoadStudio(id, preserveView = false) {
       cloudState.client
         .from("atelier_projects")
         .select("*")
+        .is("purged_at", null)
         .eq("studio_id", id),
     );
     const ids = projects.map((x) => x.id);
@@ -228,7 +229,7 @@ async function cloudLoadStudio(id, preserveView = false) {
       { docs, globals },
       cloudState.client,
     );
-    const records = projects.map((p) => ({
+    const records = projects.filter(p=>!p.deleted_at).map((p) => ({
       namespace: p.id,
       externalId: p.external_id,
       ...Object.fromEntries(
@@ -243,7 +244,7 @@ async function cloudLoadStudio(id, preserveView = false) {
       emptyPersonalWorkspace(),
     );
     // Un projet créé sans document à cause d'une coupure reste récupérable.
-    for (const p of projects)
+    for (const p of projects.filter(p=>!p.deleted_at))
       if (!next.projects.some((x) => x.id === p.external_id))
         next.projects.push({
           id: p.external_id,
@@ -832,6 +833,7 @@ async function cloudPoll() {
       cloudState.client
         .from("atelier_projects")
         .select("*")
+        .is("purged_at", null)
         .eq("studio_id", cloudState.studio.id),
     );
     const ids = projects.map((p) => p.id);

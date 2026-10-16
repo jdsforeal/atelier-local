@@ -5,7 +5,7 @@ render = function () {
   if (badge?.firstChild)
     badge.firstChild.textContent = badge.firstChild.textContent.replace(
       /^0\.8 /,
-      "0.14.2 ",
+      "0.15.0 ",
     );
   if (demoMode) return;
   const note = [...document.querySelectorAll("p.note")].find((el) =>
@@ -13,7 +13,7 @@ render = function () {
   );
   if (note)
     note.textContent =
-      "Répertoire de référence documenté, non exhaustif. Aucun contact personnel n’est ajouté automatiquement. Vos ajouts restent dans votre navigateur.";
+      "Répertoire de référence documenté, non exhaustif. Aucun contact personnel n’est ajouté automatiquement. " + (typeof cloudState !== "undefined" && cloudState.active ? "Vos ajouts sont enregistrés dans votre studio privé." : "Vos ajouts restent dans votre navigateur.");
   const notice = $(".notice");
   if (cleanPersonalRecords(db, legacySeed).count)
     notice.insertAdjacentHTML(

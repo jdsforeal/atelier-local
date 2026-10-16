@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {mailRecipientGuard,guardMailTransport} from '../mail-service/safety.mjs';
+const guard=mailRecipientGuard('sandbox','testeur@gmail.com, partenaire@gmail.com');
+assert.throws(()=>mailRecipientGuard()('fournisseur@marque.fr'));
+assert.throws(()=>guard('fournisseur@marque.fr'));
+guard('TESTEUR@gmail.com');
+let sends=0;const api=guardMailTransport({send:async()=>{sends++;return {id:'test'}}},guard);
+const raw=s=>Buffer.from(s).toString('base64url');
+await assert.rejects(api.send({raw:raw('To: fournisseur@marque.fr\r\n\r\nTexte')}));
+await assert.rejects(api.send({raw:raw('To: testeur@gmail.com\r\nBcc: fournisseur@marque.fr\r\n\r\nTexte')}));
+assert.equal(sends,0);
+await api.send({raw:raw('To: partenaire@gmail.com\r\n\r\nTexte')});assert.equal(sends,1);
+console.log('Sécurité Gmail : refus par défaut, liste de test exacte, aucun destinataire caché ; transport initial et relance commun. Aucun appel Gmail réel.');

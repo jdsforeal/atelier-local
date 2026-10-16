@@ -16,6 +16,7 @@ await pg.exec(
 );
 await pg.exec(await readFile("supabase/migrations/202610150003_studio_settings.sql", "utf8"));
 await pg.exec(await readFile("supabase/migrations/202610150004_studio_profile.sql", "utf8"));
+await pg.exec(await readFile("supabase/migrations/202610150005_project_trash.sql", "utf8"));
 const owner = "00000000-0000-0000-0000-000000000001",
   assistant = "00000000-0000-0000-0000-000000000002",
   stranger = "00000000-0000-0000-0000-000000000003",
@@ -230,4 +231,30 @@ assert.equal(scalar(await as(owner,'select avatar from public.atelier_studios wh
 await assert.rejects(as(assistant,"select public.atelier_update_studio_profile($1,'Intrusion','')",[studio]),/réservée/);
 await assert.rejects(as(owner,"select public.atelier_update_studio_profile($1,'Studio','data:image/svg+xml;base64,YWJj')",[studio]),/Image invalide/);
 console.log('Identité studio : photo réservée aux membres autorisés, modification propriétaire seule, SVG refusé OK.');
+
+
+const trashProject=scalar(await as(owner,"select public.atelier_create_project($1,'trash-test','À retirer')",[studio]));
+await as(owner,"select public.atelier_save_document($1,'creative',0,'{}')",[trashProject]);
+await assert.rejects(as(assistant,'select public.atelier_trash_project($1,false)',[trashProject]));
+await pg.exec('reset role');await pg.query('insert into public.atelier_members(project_id,user_id,email,granted_by) values($1,$2,$3,$4)',[trashProject,assistant,'assistant@atelier.test',owner]);
+assert.equal((await as(assistant,'select * from public.atelier_projects where id=$1',[trashProject])).rows.length,1);
+await as(owner,'select public.atelier_trash_project($1,false)',[trashProject]);
+assert.equal((await as(assistant,'select * from public.atelier_projects where id=$1',[trashProject])).rows.length,0);
+await assert.rejects(as(owner,"select public.atelier_save_document($1,'creative',1,'{}')",[trashProject]));
+await as(owner,'select public.atelier_trash_project($1,true)',[trashProject]);
+assert.equal((await as(assistant,'select * from public.atelier_projects where id=$1',[trashProject])).rows.length,1);
+assert.equal((await as(owner,'select deleted_at from public.atelier_projects where id=$1',[trashProject])).rows[0].deleted_at,null);
+await as(owner,'select public.atelier_trash_project($1,false)',[trashProject]);
+await pg.exec('reset role');await pg.query("update public.atelier_projects set deleted_at=now()-interval '31 days' where id=$1",[trashProject]);
+await assert.rejects(as(owner,'select public.atelier_trash_project($1,true)',[trashProject]));
+await pg.exec('reset role');await pg.exec('select atelier_private.purge_expired_projects()');
+assert.equal((await as(owner,'select * from public.atelier_projects where id=$1',[trashProject])).rows.length,0);
+await pg.exec('reset role');assert.equal((await pg.query('select * from public.atelier_documents where project_id=$1',[trashProject])).rows.length,0);
+console.log('Corbeille : restauration, édition bloquée, délai de 30 jours et purge vérifiés.');
+
+const emptyProject=scalar(await as(owner,"select public.atelier_create_project($1,'empty-trash','À purger')",[studio]));
+await as(owner,'select public.atelier_trash_project($1,false)',[emptyProject]);
+await assert.rejects(as(assistant,'select public.atelier_empty_trash($1)',[studio]));
+await as(owner,'select public.atelier_empty_trash($1)',[studio]);
+assert.equal((await as(owner,'select * from public.atelier_projects where id=$1',[emptyProject])).rows.length,0);
 await pg.close();

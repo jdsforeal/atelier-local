@@ -305,10 +305,10 @@ renderContacts = function () {
     title(
       "Votre réseau de création.",
       "Marques, loueurs et interlocuteurs : une information saisie une seule fois.",
-      "contact",
-      "Ajouter un contact",
+      "",
+      "",
     ) +
-    `<div class="toolbar"><button data-network-tab="directory" class="${networkTab === "directory" ? "primary" : ""}">Répertoire (${directory.length})</button><button data-network-tab="contacts" class="${networkTab === "contacts" ? "primary" : ""}">${demoMode ? "Contacts publics et ajouts" : "Mes contacts"} (${db.contacts.length})</button><button data-new-supplier>＋ Structure</button></div>
+    `<div class="network-create-actions"><button class="primary" data-action="contact">＋ Ajouter un contact</button><button data-new-supplier>＋ Ajouter une marque ou un fournisseur</button></div><p class="note">Une marque ou un fournisseur est une entreprise. Un contact est la personne ou le service à joindre, lié à cette entreprise.</p><div class="toolbar"><button data-network-tab="directory" class="${networkTab === "directory" ? "primary" : ""}">Répertoire (${directory.length})</button><button data-network-tab="contacts" class="${networkTab === "contacts" ? "primary" : ""}">${demoMode ? "Contacts publics et ajouts" : "Mes contacts"} (${db.contacts.length})</button></div>
  <p class="note">${demoMode ? "Simulation : coordonnées professionnelles publiques sourcées ; projets et échanges fictifs. Aucun message réel envoyé. Les marques sans contact restent à compléter." : "Répertoire de départ documenté, non exhaustif. Ajoutez les coordonnées publiques à votre carnet quand elles sont utiles."}</p>
  <div class="toolbar"><input id="supplier-search" type="search" placeholder="Nom, spécialité, ville…" aria-label="Rechercher dans le réseau" value="${esc(supplierSearch)}">
  ${networkTab === "directory" ? `<select id="supplier-coverage" aria-label="Couverture des contacts">${opts(["Tous", "Avec contact", "Contact à rechercher"], supplierCoverage)}</select><select id="supplier-country" aria-label="Pays">${opts(["Tous", "Belgique", "France"], supplierCountry)}</select><select id="supplier-type" aria-label="Activité">${opts(["Tous", "Marque", "Location costumes", "Showroom", "À préciser"], supplierType)}</select><select id="supplier-category" aria-label="Spécialité">${opts(["Toutes", "Vêtements", "Bijoux", "Accessoires", "Costumes"], supplierCategory)}</select>` : ""}

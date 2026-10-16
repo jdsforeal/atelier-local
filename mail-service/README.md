@@ -51,3 +51,11 @@ Le contrôle d’une réponse juste avant une relance réduit les courses mais n
 ## Vérification obligatoire avant activation réelle
 
 Les tests automatiques utilisent un faux transport Gmail et n’envoient rien. Avant d’activer le pilote : connecter les deux comptes test, envoyer uniquement vers une adresse de test contrôlée, vérifier le message reçu, répondre, vérifier l’arrêt de relance, puis tester un délai et un redémarrage du service. Vérifier également deux comptes isolés, le renouvellement des autorisations, les sauvegardes chiffrées et leur restauration. Pour une ouverture publique, ajouter des limites par compte, une rétention des données, la suppression/révocation des comptes et un stockage adapté à la charge. Ne pas augmenter les destinataires ou lancer des campagnes pendant ces tests.
+
+## Pilote 0.15 — essais sans contacter le répertoire
+
+Le service démarre désormais en `MAIL_MODE=sandbox`. Sans `MAIL_TEST_RECIPIENTS`, aucun envoi n’est autorisé. Une liste d’adresses exactes contrôlées par les testeurs doit être configurée côté serveur (séparées par une virgule). Le lot entier est refusé avant mise en file si une adresse n’est pas autorisée. Le transport vérifie encore le destinataire juste avant chaque appel Gmail, y compris les relances ; les en-têtes Cc/Bcc sont refusés. Le mode `live` est une activation explicite séparée et ne doit pas être utilisé pour le pilote.
+
+Parcours : (1) génération et suivi avec le faux transport des tests, aucun appel Google ; (2) connexion Gmail de deux comptes de test ; (3) envoi d’une seule demande entre ces adresses, réponse dans le même fil, puis vérification de l’arrêt de relance ; (4) un deuxième essai sans réponse pour vérifier la relance unique. Aucune adresse du répertoire ne doit être autorisée. Ne pas réduire le délai de relance réel dans le moteur : les tests automatiques font avancer une horloge simulée.
+
+Ces protections sont implémentées et testées ; elles n’activent pas Gmail. Le service doit encore être démarré et la configuration OAuth Gmail autorisée. Un service local peut servir aux essais gratuits tant que l’ordinateur reste allumé ; il ne fournit pas un suivi permanent une fois arrêté.
