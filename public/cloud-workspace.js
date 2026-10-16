@@ -960,7 +960,7 @@ mailAPI=async function(route,body){
  if(cloudState.studio?.owner_id!==cloudState.user?.id)throw Error('Pilote Gmail réservé au propriétaire.');
  if(!mailServiceURL)throw Error('Pour les essais Gmail gratuits, ouvrez Atelier sur cet ordinateur avec le service local.');
  if(route==='send'){await cloudFlush();if(cloudState.busy||cloudState.pending||cloudState.conflict||cloudState.error)throw Error('Attendez la sauvegarde en ligne avant d’envoyer les demandes.');}
- const {data,error}=await cloudState.client.auth.getSession();if(error||!data.session)throw Error('Reconnectez votre compte Atelier.');
+ const {data,error}=await Promise.race([cloudState.client.auth.getSession(),new Promise((_,reject)=>setTimeout(()=>reject(Error('La vérification du compte Atelier prend trop de temps. Rechargez la page puis réessayez.')),10000))]);if(error||!data.session)throw Error('Reconnectez votre compte Atelier.');
  const response=await fetch(mailServiceURL+'/api/mail/'+route,{
  method:body?'POST':'GET',headers:{'Content-Type':'application/json','X-Atelier-Token':data.session.access_token,'X-Atelier-Studio':cloudState.studio.id,...(mailSession?{Authorization:'Bearer '+mailSession.token}:{})},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(35000)});
  const result=await response.json();if(!response.ok)throw Error(result.error||'Service Gmail indisponible.');return result;

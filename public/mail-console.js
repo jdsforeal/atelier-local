@@ -7,6 +7,7 @@ let mailFilter = "Tout",
   mailBusy = false,
   mailSession = null,
   mailPopup = null,
+  mailConnectURL = "",
   mailNonce = "",
   mailLastSync = 0,
   mailServiceError = "";
@@ -394,25 +395,22 @@ document.addEventListener("click", async (event) => {
       );
     }
     if (b.hasAttribute("data-mail-connect")) {
+      b.textContent = "Ouverture de Google…";
       if (demoMode) return;
       if (!mailServiceURL)
         throw Error(
           "Connexion non activée : le propriétaire doit configurer Google et héberger le service une seule fois. Les utilisatrices n’auront ensuite qu’à cliquer sur Connecter Gmail.",
         );
-      mailPopup = window.open(
-        "about:blank",
-        "atelier-gmail",
-        "popup,width=540,height=720",
-      );
-      if (!mailPopup) throw Error("Autorisez la fenêtre de connexion Gmail.");
       mailNonce = crypto.randomUUID();
-      try {
-        const data = await mailAPI("connect", { nonce: mailNonce });
-        mailPopup.location = data.url;
-      } catch (e) {
-        mailPopup.close();
-        throw e;
-      }
+      const data = await mailAPI("connect", { nonce: mailNonce });
+      mailConnectURL = data.url;
+      modal("Autoriser Gmail pour les essais", "<p>Google va demander l’autorisation d’envoyer des messages et de lire les e-mails pour repérer les réponses. Le pilote limite les destinataires aux adresses de test.</p><button type=\"button\" data-mail-authorize>Continuer avec Google</button>", () => {});
+      b.textContent = "Connecter Gmail";
+    }
+    if (b.hasAttribute("data-mail-authorize")) {
+      if (!mailConnectURL) throw Error("Recommencez la connexion Gmail.");
+      mailPopup = window.open(mailConnectURL, "atelier-gmail", "popup,width=540,height=720");
+      if (!mailPopup) throw Error("Autorisez la fenêtre de connexion Gmail.");
     }
     if (b.hasAttribute("data-mail-sync")) {
       await mailAPI("check", {});
@@ -454,6 +452,10 @@ document.addEventListener("click", async (event) => {
       );
     }
   } catch (error) {
+    if (b.hasAttribute("data-mail-connect")) {
+      mailServiceError = error.message;
+      mailRefresh();
+    }
     toast(error.message);
   }
 });
