@@ -282,7 +282,7 @@ document.addEventListener("click", (event) => {
         ...data,
         project: pid,
         look: lookId,
-        needId,
+        needId: resolvePieceNeed(db, {...data, project:pid, look:lookId}, uid),
         variantId: look.activeVariant,
         id: uid(),
         contact: contact?.id || "",

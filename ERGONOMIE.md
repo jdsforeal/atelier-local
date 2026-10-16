@@ -103,3 +103,9 @@ Le lien ASOS fourni a été testé avec la vraie page : marque 4505, prix 32,99 
 Le service Supabase product-import vérifie chaque session auprès de Supabase Auth, limite les appels et les origines, refuse les redirections hors des boutiques autorisées et ne lit ni n’écrit les projets. L’ancien contrôle JWT du portail est remplacé par cette validation sur autorisation explicite. Un appel anonyme sur le service déployé retourne 401. La validation avec une session réelle en ligne reste à effectuer après publication du frontend.
 
 Limites : certains sites bloquent la lecture ; repli signalé sur les mots du lien sans inventer de prix ou photo. Boutique et fournisseur réel peuvent différer sur une marketplace. Aucune analyse OCR d’image dans cette version.
+
+## Version 0.17.1 — classement selon la catégorie de la pièce
+
+À l’ajout depuis un besoin du look, la catégorie validée dans la fiche détermine le besoin de destination : Haut rejoint les hauts même depuis le bouton + Bas. Le besoin choisi est conservé lorsqu’il correspond à la catégorie (y compris plusieurs besoins personnalisés de même catégorie). Sinon, le premier besoin compatible du même look est utilisé, ou créé s’il manque. Aucun déplacement vers un autre look.
+
+Le même contrôle est appliqué à la modification : réenregistrer une fiche mal classée corrige son rattachement. Les données existantes ne sont pas migrées silencieusement. Tests du modèle et des vrais callbacks de création/modification, puis suite complète.

@@ -315,3 +315,18 @@ function hydrateWorkspace(database, catalog = []) {
   }));
   return database;
 }
+
+/** La catégorie de la fiche prime sur le bouton utilisé pour ouvrir le formulaire. */
+function resolvePieceNeed(database, values, makeId) {
+  const look = database.projects.find(p => p.id === values.project)?.looks.find(l => l.id === values.look);
+  if (!look || !values.category) return '';
+  look.needs ??= [];
+  const current = look.needs.find(n => n.id === values.needId);
+  if (current && (current.category || current.name) === values.category) return current.id;
+  let target = look.needs.find(n => (n.category || n.name) === values.category);
+  if (!target) {
+    target = {id:makeId(), name:values.category, category:values.category, multiple:false, state:'À chercher'};
+    look.needs.push(target);
+  }
+  return target.id;
+}

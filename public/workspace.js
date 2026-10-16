@@ -412,6 +412,7 @@ function editPiece(id) {
       commit: d.commit === "Engagé",
       cautionReturned: d.cautionReturned === "Oui",
     };
+    obj.needId = resolvePieceNeed(db, obj, uid);
     if (id) {
       recordPieceEdit(db, x, obj);
       Object.assign(x, obj);

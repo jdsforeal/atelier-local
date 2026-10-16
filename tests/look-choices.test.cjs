@@ -91,3 +91,29 @@ assert(
 console.log(
   "Choix exclusif, superposition, historique, budget séparé et archive protégée : OK.",
 );
+
+// Un haut ajouté depuis le + Bas doit rejoindre les hauts, y compris à la modification.
+const placement = {projects:[{id:'project',looks:[{id:'look',needs:[{id:'bas',name:'Bas',category:'Bas'},{id:'haut',name:'Hauts',category:'Haut'},{id:'haut-b',name:'Deuxième haut',category:'Haut',multiple:true}]}]}]};
+const values={project:'project',look:'look',category:'Haut',needId:'bas'};
+assert.equal(context.resolvePieceNeed(placement,values,()=> 'new'),'haut');
+assert.equal(context.resolvePieceNeed(placement,{...values,needId:'haut-b'},()=> 'new'),'haut-b','Conserver un besoin personnalisé de même catégorie');
+assert.equal(context.resolvePieceNeed(placement,{...values,category:'Accessoire'},()=> 'accessoire'),'accessoire');
+assert.equal(context.resolvePieceNeed(placement,{...values,category:'Accessoire'},()=> 'duplicate'),'accessoire','Réutiliser le besoin créé');
+assert.equal(context.resolvePieceNeed(placement,{...values,look:''},()=> 'bad'),'','Une pièce sans look ne conserve pas un besoin étranger');
+assert.equal(placement.projects[0].looks[0].needs.length,4);
+console.log('Classement des pièces : catégorie prioritaire, besoin personnalisé conservé, création sans doublon et look isolé OK.');
+// Exécuter les vrais callbacks de création depuis + Bas et de modification.
+let callback, listener, serial=0;
+const placementContext={db:{...placement,pieces:[],contacts:[],selectionHistory:[]},pid:'project',view:'home',tab:'',render:()=>{},pieceForm:()=>'',field:()=>'',modal:(_title,_fields,fn)=>callback=fn,project:()=>placement.projects[0],uid:()=> 'test-'+(++serial),safeUrl:()=>true,contactLabel:c=>c.name,document:{addEventListener:(type,fn)=>{if(type==='click')listener=fn;}}};
+vm.createContext(placementContext);
+vm.runInContext(fs.readFileSync('public/look-model.js','utf8')+'\n'+fs.readFileSync('public/look-choices.js','utf8'),placementContext);
+placement.projects[0].looks[0].activeVariant='variant';
+listener({target:{closest:()=>({dataset:{addOption:'look:bas'}})}});
+callback({name:'Hoodie',category:'Haut',needId:'bas',price:'39.99',caution:'0'});
+const added=placementContext.db.pieces[0];assert.equal(added.needId,'haut');assert.equal(added.look,'look');assert.equal(added.category,'Haut');
+const workspaceSource=fs.readFileSync('public/workspace.js','utf8');
+vm.runInContext(workspaceSource.slice(workspaceSource.indexOf('function editPiece(id)'),workspaceSource.indexOf('function editExpense(id)')),placementContext);
+added.needId='bas';placementContext.editPiece(added.id);
+callback({...added,project:'project',look:'look',category:'Haut',price:'39.99',caution:'0'});
+assert.equal(added.needId,'haut','Modifier une fiche déjà mal classée corrige son besoin');
+console.log('Parcours réels : + Bas avec catégorie Haut et correction d’une fiche existante OK.');
