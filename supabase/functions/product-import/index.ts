@@ -47,6 +47,9 @@ var require_product_import_model = __commonJS({
       }).replace(/&#(\d+);/g, (_, n) => Number(n) <= 1114111 ? String.fromCodePoint(Number(n)) : "").replace(/&(amp|quot|apos|lt|gt|nbsp);/g, (_, n) => ({ amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " " })[n]).replace(/\s+/g, " ").trim().slice(0, 2e3);
     }
     var PRODUCT_SHOPS = [
+      { hosts: ["ghbass-eu.com", "www.ghbass-eu.com"], name: "G.H.BASS", ownBrand: true },
+      { hosts: ["lottusse.com", "www.lottusse.com"], name: "Lottusse", ownBrand: true },
+      { hosts: ["prada.com", "www.prada.com"], name: "Prada", ownBrand: true },
       { hosts: ["asos.com", "www.asos.com"], name: "ASOS", ownBrand: false },
       { hosts: ["zalando.fr", "www.zalando.fr", "zalando.be", "www.zalando.be", "fr.zalando.be", "nl.zalando.be", "zalando.de", "www.zalando.de", "zalando.nl", "www.zalando.nl"], name: "Zalando", ownBrand: false },
       { hosts: ["chanel.com", "www.chanel.com"], name: "Chanel", ownBrand: true },
@@ -91,6 +94,8 @@ var require_product_import_model = __commonJS({
       } else {
         const productIndex = segments.indexOf("product");
         let slug = productIndex >= 0 ? segments[productIndex + 1] || "" : segments.at(-1) || "";
+        if (shop?.name === "Prada") slug = segments[segments.indexOf("p") + 1] || "";
+        if (shop?.name === "Lottusse") slug = slug.replace(/-[A-Z]{2}\d+-\d+$/i, "");
         if (shop?.name === "Mango") slug = [...segments].reverse().find((s) => s.includes("-")) || "";
         slug = slug.replace(/\.(html?|aspx)$/i, "").replace(/-(?:p\d{6,}|l\d{6,}|[a-z0-9]{8,}-[a-z0-9]{3})$/i, "");
         if (slug.includes("-") && !/^\d+$/.test(slug) && !/^(?:productpage\.|[a-z]+\d)/i.test(slug)) name = slug.replace(/-/g, " ");
@@ -128,6 +133,14 @@ var require_product_import_model = __commonJS({
       }
       return null;
     }
+    function productJSON(text) {
+      const raw = text.trim().replace(/^<!\[CDATA\[/, "").replace(/\]\]>$/, "");
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return JSON.parse(raw.replace(/&quot;/g, '"').replace(/&#34;/g, '"').replace(/&amp;/g, "&"));
+      }
+    }
     function productSchemaType(node, type) {
       return [node?.["@type"]].flat().some((value) => typeof value === "string" && value.split(/[\/#]/).at(-1) === type);
     }
@@ -140,7 +153,9 @@ var require_product_import_model = __commonJS({
       }
     }
     function productOffer(offers, url) {
-      const all = [offers].flat().filter(Boolean).flatMap((o) => productSchemaType(o, "AggregateOffer") ? [o.offers].flat().filter(Boolean) : [o]);
+      const aggregate = productSchemaType(offers, "AggregateOffer") ? offers : null;
+      const all = [offers].flat().filter(Boolean).flatMap((o) => productSchemaType(o, "AggregateOffer") ? [o.offers].flat().filter(Boolean) : [o]).map((o) => o.itemOffered ? { ...o.itemOffered.offers, url: o.itemOffered.url } : o);
+      if (!all.length && aggregate && aggregate.lowPrice === aggregate.highPrice) return { price: aggregate.lowPrice, priceCurrency: aggregate.priceCurrency };
       const exact = all.find((o) => {
         try {
           return o.url && new URL(o.url, url).href === url;
@@ -160,7 +175,7 @@ var require_product_import_model = __commonJS({
         const key2 = attrs.property || attrs.name;
         if (key2 && attrs.content) meta[key2.toLowerCase()] = productText(attrs.content);
       }
-      const products = [];
+      const products = [], schemaImages = [];
       function collect(node, depth = 0) {
         if (!node || depth > 12) return;
         if (Array.isArray(node)) {
@@ -168,13 +183,14 @@ var require_product_import_model = __commonJS({
           return;
         }
         if (typeof node !== "object") return;
+        if (productSchemaType(node, "ImageObject")) schemaImages.push(node);
         if (productSchemaType(node, "Product") || productSchemaType(node, "ProductGroup")) products.push(node);
         if (node["@graph"]) collect(node["@graph"], depth + 1);
         if (node.mainEntity) collect(node.mainEntity, depth + 1);
       }
       for (const script of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) if (/type\s*=\s*["']application\/ld\+json["']/i.test(script[1])) {
         try {
-          collect(JSON.parse(script[2].trim().replace(/^<!\[CDATA\[/, "").replace(/\]\]>$/, "")));
+          collect(productJSON(script[2]));
         } catch {
         }
       }
@@ -253,8 +269,55 @@ var require_product_import_model = __commonJS({
           product = detail;
         }
       }
+      if (productShop2(url)?.name === "G.H.BASS") {
+        const primary = product?.image;
+        let reference = "";
+        try {
+          reference = new URL(typeof primary === "string" ? primary : primary?.[0], url).pathname.split("/").at(-1)?.split("-").slice(0, 2).join("-") || "";
+        } catch {
+        }
+        for (const match of html.matchAll(/<li\b[^>]*data-product-slider-nav=["']\d+["'][^>]*>([\s\S]*?)<\/li>/gi)) {
+          const src = match[1].match(/<img\b[^>]*\ssrc=["']([^"']+)["']/i)?.[1];
+          if (!src || !reference) continue;
+          try {
+            const asset = new URL(src.replace(/&amp;/g, "&"), url);
+            if (asset.hostname === "www.ghbass-eu.com" && asset.pathname.split("/").at(-1).startsWith(reference + "-")) {
+              ["width", "height", "crop"].forEach((k) => asset.searchParams.delete(k));
+              gallery.push(asset.href);
+            }
+          } catch {
+          }
+        }
+      }
+      if (productShop2(url)?.name === "Lottusse") {
+        const next = html.match(/<script\b[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+        try {
+          const props = JSON.parse(next?.[1] || "{}").props?.pageProps;
+          const id = props?.pageProps?.pageInfo?.productId;
+          const slug = props?.pageProps?.pageInfo?.slug;
+          const detail = Object.values(props?.fallback || {}).find((p) => p?.id === id && p.images);
+          if (id && new URL(slug, url).pathname === new URL(url).pathname && detail) gallery = detail.images.map((image) => image.src).filter((src) => typeof src === "string" && new URL(src, url).hostname === "cloud.lottusse.com" && new URL(src, url).pathname.includes("/" + id + "_"));
+        } catch {
+        }
+      }
+      if (productShop2(url)?.name === "Prada") {
+        const id = new URL(url).pathname.split("/").filter(Boolean).at(-1);
+        gallery = schemaImages.map((image) => image.contentUrl || image.url).filter((src) => typeof src === "string" && src.startsWith("https://www.prada.com/content/dam/pradabkg_products/") && src.split("/").at(-1).startsWith(id + "_"));
+        const selected = [...html.matchAll(/<div\b([^>]*kl-variant-name=[^>]*)>\s*<a\b([^>]*)>/gi)].find((m) => {
+          const href = m[2].match(/href="([^"]+)"/)?.[1];
+          return /aria-current="true"/.test(m[2]) && href && productURLKey(href, url) === productURLKey(url, url);
+        });
+        if (selected) {
+          const amount = selected[1].match(/kl-price="([^"]+)"/)?.[1];
+          const currency = selected[1].match(/kl-pricecurrency="([^"]+)"/)?.[1];
+          if (currency === "\u20AC" && /^\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?$|^\d+(?:,\d{1,2})?$/.test(amount || "")) {
+            result.price = Number(amount.replace(/\./g, "").replace(",", "."));
+            result.currency = "EUR";
+          }
+        }
+      }
       if (productShop2(url)?.ownBrand) result.brand = productShop2(url).name;
-      const rawImages = [...gallery, ...[product?.image].flat().filter(Boolean), meta["og:image"]].flat();
+      const rawImages = gallery.length && ["Prada", "G.H.BASS", "Lottusse"].includes(productShop2(url)?.name) ? gallery : [...gallery, ...[product?.image].flat().filter(Boolean), meta["og:image"]].flat();
       const imageKeys = /* @__PURE__ */ new Set();
       for (const item of rawImages) {
         let image = typeof item === "string" ? item : item?.url || item?.contentUrl;
@@ -268,7 +331,10 @@ var require_product_import_model = __commonJS({
         if (image) {
           const asset = new URL(image);
           let key2 = image;
-          if (asset.hostname === "img01.ztat.net") {
+          if (asset.hostname === "www.ghbass-eu.com") {
+            ["width", "height", "crop"].forEach((k) => asset.searchParams.delete(k));
+            key2 = asset.href;
+          } else if (asset.hostname === "img01.ztat.net") {
             asset.searchParams.delete("imwidth");
             key2 = asset.href;
           } else if (/\.maje\.com$/.test(asset.hostname)) key2 = asset.pathname.replace(/^.*?\/on\//, "/on/");

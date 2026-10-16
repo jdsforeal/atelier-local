@@ -1,7 +1,7 @@
 /** Contrôle réseau manuel : les prix et protections des boutiques peuvent changer. */
 import {readFile,writeFile} from 'node:fs/promises';
 import {fetchProduct} from '../product-import/fetch-product.mjs';
-const links=JSON.parse(await readFile(new URL('../tests/fixtures/product-import/live-links.json',import.meta.url),'utf8'));
+const links=JSON.parse(await readFile(new URL('../tests/fixtures/product-import/'+(process.argv.includes('--user-links')?'user-links.json':'live-links.json'),import.meta.url),'utf8'));
 const results=await Promise.all(links.map(async([shop,url])=>{
  const responses=[];const started=Date.now();
  const data=await fetchProduct(url,async(target,options)=>{const response=await fetch(target,options);responses.push(response.status);return response;});

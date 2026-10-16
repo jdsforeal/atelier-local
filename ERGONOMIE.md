@@ -127,3 +127,11 @@ Le lecteur standard comprend ProductGroup avec variantes, URLs et tailles, offre
 L’interface distingue lecture limitée, partielle et fiche récupérée ; messages selon blocage, article retiré, délai ou redirection refusée, lien Ouvrir la fiche. Aucun prix/photo n’est fabriqué au repli. Le nom et la boutique lisibles du lien peuvent toujours être proposés, clairement signalés comme tels. Limite : aucun import universel garanti ni OCR ; protections des sites et différences local/cloud subsistent.
 
 Contrôles : fixtures publiques minimales Zalando/Uniqlo, dix hôtes, mauvaises variantes, domaine trompeur, refus HTTP, page collection, recommandations et régressions. `npm run test:product-shops` exécute le contrôle réseau manuel des dix URLs (hors suite automatique). Rapport du test conservé dans les outputs de la conversation.
+
+## Version 0.17.4 — trois liens utilisateur supplémentaires
+
+Ajout des domaines G.H.BASS Europe, Lottusse et Prada. Tests réels avec le lecteur corrigé : G.H.BASS 195 € / 7 photos, Lottusse 287 € / 4 photos, Prada 1 350 € / 6 photos pour la référence marron foncé. Ces prix sont ceux observés le 16 octobre 2026 et ne sont pas codés en dur.
+
+Les offres imbriquées itemOffered sont comprises (tailles G.H.BASS), la marque G.H.BASS remplace la référence erronément publiée comme marque. Galeries lues uniquement pour le produit en cours : miniatures produit G.H.BASS, état produit Lottusse, objets ImageObject Prada encodés en entités HTML. Le prix Prada est lu sur la couleur sélectionnée dont le lien correspond à la référence demandée ; le point des milliers français est interprété correctement. Les autres couleurs et logos restent exclus. Aucun script distant exécuté.
+
+Tests reproductibles : offres identiques/variables par taille, galerie Lottusse sans recommandations, JSON encodé Prada, montant local et référence/couleur correcte avec paramètres publicitaires. `node scripts/product-import-smoke.mjs /chemin/rapport.json --user-links` contrôle ces trois pages en direct.
