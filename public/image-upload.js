@@ -13,7 +13,7 @@ function refreshImageUpload(input) {
   const files=Array.from(input.files||[]);
   state.title.textContent=files.length?`${files.length} image${files.length>1?'s':''} prête${files.length>1?'s':''}`:input.multiple?'Glissez vos images ici':'Glissez votre image ici';
   state.hint.textContent=files.length?'Cliquez pour remplacer la sélection':'ou cliquez pour parcourir vos fichiers';
-  state.clear.hidden=!files.length;
+  state.clear.hidden=!files.length;state.browse.textContent=files.length?'Changer la sélection':input.multiple?'Choisir des images':'Choisir une image';
   for(const file of files.slice(0,8)){
     const figure=document.createElement('figure'),img=document.createElement('img'),caption=document.createElement('figcaption');
     const url=URL.createObjectURL(file);state.urls.push(url);img.src=url;img.alt='Aperçu de '+file.name;
@@ -28,14 +28,14 @@ function enhanceImageUploads() {
     const zone=document.createElement('div');zone.className='image-upload-zone';
     const icon=document.createElement('span');icon.className='image-upload-icon';icon.setAttribute('aria-hidden','true');
     icon.innerHTML='<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/></svg>';
-    const title=document.createElement('strong'),hint=document.createElement('span'),formats=document.createElement('small');
+    const title=document.createElement('strong'),hint=document.createElement('span'),formats=document.createElement('small'),browse=document.createElement('span');browse.className='image-upload-browse';browse.setAttribute('aria-hidden','true');
     formats.textContent=`JPEG, PNG, WebP · 10 Mo maximum${input.multiple?' par image · sélection multiple':''}`;
     const previews=document.createElement('div');previews.className='image-upload-previews';
     const error=document.createElement('p');error.className='image-upload-error';error.setAttribute('role','alert');error.hidden=true;
     const clear=document.createElement('button');clear.type='button';clear.className='image-upload-clear';clear.textContent='Retirer la sélection';clear.hidden=true;
-    input.before(zone);zone.append(icon,title,hint,formats,input);zone.after(previews,error,clear);
+    input.before(zone);zone.append(icon,title,hint,browse,formats,input);zone.after(previews,error,clear);
     input.classList.add('image-upload-input');
-    imageUploadStates.set(input,{title,hint,previews,error,clear,urls:[]});
+    imageUploadStates.set(input,{title,hint,browse,previews,error,clear,urls:[]});
     const showError=message=>{error.textContent=message;error.hidden=!message;};
     input.addEventListener('change',()=>{
       const message=validateImageUpload(Array.from(input.files||[]),input.multiple);

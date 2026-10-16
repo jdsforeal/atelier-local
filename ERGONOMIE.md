@@ -145,3 +145,9 @@ Lecture des captures originales avant rognage : Tesseract.js 7, français/anglai
 Une fiche peut aussi recevoir du texte copié depuis la boutique, utile quand le serveur du marchand bloque la récupération. Les protections ne sont pas contournées. La lecture d’une capture seule est également disponible dans le formulaire existant ; son utilisation conserve le fichier original pour le cadrage à l’enregistrement.
 
 Validation : suite complète, test réel d’une capture ASOS Pull&Bear (nom, marque, ASOS, 39,99 €, Chaussures), association capture/lien puis import de deux pièces (mocassin et hoodie) dans les bonnes lignes. Les tests du modèle vérifient préparation sans mutation, erreur de lot sans écriture, droits financiers, doublons, URL/photo et catégories. La sauvegarde cloud conserve le mécanisme existant et ses notifications de conflit.
+
+## Version 0.18.1 — présentation homogène des imports
+
+Les fiches et l’import par lot partagent deux cartes de sources, une zone de dépôt commune et les mêmes vignettes sélectionnables. Les champs fichier natifs sont remplacés visuellement par une zone cliquable, toujours accessible au clavier. Les captures associées au lot ne créent plus un second aperçu transitoire : leur aperçu reste dans la fiche. Les cartes se réorganisent selon la largeur réelle de la fenêtre, y compris dans une modale étroite. Les boutons désactivés restent visibles et leur zone signale l’indisponibilité.
+
+Contrôles : dépôt simple/multiple et fichiers refusés, syntaxe des modules, rendu des cartes ordinateur/téléphone et sélection des photos boutique. Aucun changement de sauvegarde ou d’analyse des données.
