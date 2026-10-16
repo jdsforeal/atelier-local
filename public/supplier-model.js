@@ -19,6 +19,21 @@ function relatedContacts(database, supplier) {
       (!c.supplierId && supplierKey(c.brand) === supplierKey(supplier.name)),
   );
 }
+function pieceContactGroups(database, directory, brandName = "", supplierName = "") {
+  const structures = allSuppliers(database, directory);
+  const brand = structures.find(s => supplierKey(s.name) === supplierKey(brandName));
+  const supplier = structures.find(s => supplierKey(s.name) === supplierKey(supplierName));
+  const used = new Set(), groups = [];
+  for (const [label, structure] of [["Fournisseur", supplier], ["Marque", brand]]) {
+    if (!structure) continue;
+    const contacts = relatedContacts(database, structure).filter(c => !used.has(c.id));
+    contacts.forEach(c => used.add(c.id));
+    if (contacts.length) groups.push({label:label+" · "+structure.name, contacts});
+  }
+  const remaining = database.contacts.filter(c => !used.has(c.id));
+  if (remaining.length) groups.push({label:groups.length?"Autres contacts du carnet":"Tous les contacts du carnet", contacts:remaining});
+  return groups;
+}
 function groupSupplierPieces(database, projectId, directory) {
   const groups = new Map();
   const suppliers = allSuppliers(database, directory);
@@ -52,7 +67,9 @@ function groupSupplierPieces(database, projectId, directory) {
               : [],
           pieces: [],
         });
-      groups.get(key).pieces.push(piece);
+      const group = groups.get(key);
+      if (contact && !group.contacts.some(c => c.id === contact.id)) group.contacts.push(contact);
+      group.pieces.push(piece);
     });
   return [...groups.values()];
 }
@@ -61,5 +78,6 @@ if (typeof module !== "undefined")
     supplierKey,
     allSuppliers,
     relatedContacts,
+    pieceContactGroups,
     groupSupplierPieces,
   };

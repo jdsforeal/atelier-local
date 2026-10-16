@@ -23,8 +23,12 @@ function mailGroupSignature(project, group) {
         p.note,
         p.size,
         p.returnDue,
+        p.contact,
+        p.supplierId,
+        p.brandId,
       ])
       .sort((a, b) => a[0].localeCompare(b[0])),
+    group.contacts.map(c => [c.id, c.email]).sort((a,b)=>String(a[0]||a[1]||"").localeCompare(String(b[0]||b[1]||""))),
   ]);
 }
 function mailPieceLines(pieces) {
@@ -50,8 +54,10 @@ function mailDraftFor(project, group, existing, signature) {
         existing.signature !== current,
       currentSignature: current,
     };
+  const preferred = new Set(group.pieces.map(p => p.contact).filter(Boolean));
+  const chosen = group.contacts.filter(c => preferred.has(c.id));
   const emails = [
-    ...new Set(group.contacts.map((c) => mailAddress(c.email)).filter(Boolean)),
+    ...new Set((chosen.length ? chosen : group.contacts).map((c) => mailAddress(c.email)).filter(Boolean)),
   ];
   return {
     id: `mail-${project.id}-${group.key}${project.mailRevision ? "-r" + project.mailRevision : ""}`,

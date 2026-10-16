@@ -30,7 +30,7 @@ function cloudProjectDocuments(database, project) {
     (database[key] || []).filter((x) => x.project === project.id);
   const pieces = forProject("pieces"),
     requests = forProject("requests");
-  const supplierIds = new Set(pieces.map((x) => x.supplierId).filter(Boolean));
+  const supplierIds = new Set(pieces.flatMap((x) => [x.supplierId, x.brandId]).filter(Boolean));
   const contactIds = new Set(
     [...pieces.map((x) => x.contact), ...requests.map((x) => x.contact)].filter(
       Boolean,

@@ -73,3 +73,11 @@ Test sur la capture ASOS fournie, hors du dépôt, avant et après réduction/co
 ## Version 0.16.3 — montants avec centimes
 
 Les champs monétaires générés par field (coût de pièce/option, caution, budget, frais) acceptent explicitement virgule ou point et jusqu’à deux décimales. La soumission normalise la virgule en point avant les conversions numériques existantes. Les quantités entières restent inchangées. Vérifié : 32,99 et 32.99, 0,01, entier, refus des montants négatifs et de trois décimales ; suites choix, budget et finances réussies.
+
+## Version 0.16.4 — contacts, marque et fournisseur dans les pièces
+
+Le choix du contact d’une pièce propose les contacts du fournisseur puis de la marque, suivis du reste du carnet. Recherche par nom, structure ou e-mail ; aucune sélection automatique qui écrase un contact existant. Un contact d’une autre structure peut être choisi sans changer son rattachement original. Un contact principal par pièce ; plusieurs contacts sur un groupe fournisseur imposent toujours un choix explicite du destinataire.
+
+À l’enregistrement réussi, une nouvelle marque est ajoutée au carnet privé avec le type Marque ; un nouveau fournisseur est ajouté avec l’activité à préciser. Les noms normalisés évitent les doublons. La pièce conserve brandId et supplierId distincts ; la référence de marque accompagne les documents du projet. Le contact choisi est proposé dans les demandes ; son changement ou une modification d’adresse invalide la validation du brouillon non envoyé. Aucun e-mail envoyé.
+
+Tests : classement marque/fournisseur/reste du carnet, même structure sans doublon, vrai callback de sauvegarde avec nouvelles structures, contact original conservé, destinataire choisi et brouillon à relire. Contrôles et suite complète réussis.

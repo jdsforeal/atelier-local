@@ -28,7 +28,7 @@ function supplierOptions(
     .map((s) => `<option value="${esc(s.name)}"></option>`)
     .join("")}</datalist></label>`;
 }
-function resolveSupplier(name) {
+function resolveSupplier(name, type = "À préciser") {
   if (!name.trim()) return null;
   let s = supplierDirectory().find(
     (s) => supplierKey(s.name) === supplierKey(name),
@@ -37,7 +37,7 @@ function resolveSupplier(name) {
     s = {
       id: "private-" + uid(),
       name: name.trim(),
-      type: "À préciser",
+      type,
       country: "",
       categories: [],
       emails: [],
@@ -188,8 +188,10 @@ pieceForm = function (piece = {}) {
     "<label>Contact —",
     supplierOptions(piece.supplierId) + "<label>Contact —",
   );
+  form = form.replace(/<label>Contact —[\s\S]*?<\/label>/, `<div class="piece-contact-picker"><label>Rechercher un contact<input id="piece-contact-search" type="search" placeholder="Nom, marque, fournisseur ou e-mail…" autocomplete="off"></label><label>Contact lié à cette pièce<select name="contactName" id="piece-contact-choice" data-current-contact="${esc(db.contacts.find(c=>c.id===piece.contact)?contactLabel(db.contacts.find(c=>c.id===piece.contact)):"")}"></select></label><p id="supplier-contact-hint" class="note"></p></div>`);
   return (
     form +
+    '<p class="note">Une nouvelle marque ou un nouveau fournisseur sera ajouté à votre carnet privé en enregistrant cette pièce.</p>' +
     brandList +
     field(
       "imageUrl",
@@ -214,17 +216,6 @@ modal = function (name, fields, callback) {
           const contact = db.contacts.find(
             (c) => contactLabel(c) === data.contactName,
           );
-          const selected = supplierDirectory().find(
-            (s) => supplierKey(s.name) === supplierKey(data.supplierName),
-          );
-          if (
-            selected &&
-            contact?.supplierId &&
-            contact.supplierId !== selected.id
-          )
-            throw Error(
-              "Ce contact appartient à une autre structure. Choisissez un contact lié.",
-            );
           const file = form.elements.piecePhoto?.files[0];
           const image = file
             ? await readImage(file)
@@ -238,6 +229,9 @@ modal = function (name, fields, callback) {
           const piece = editingId
             ? db.pieces.find((p) => p.id === editingId)
             : db.pieces.at(-1);
+          const brand = resolveSupplier(data.brand || "", "Marque");
+          piece.brandId = brand?.id || "";
+          piece.brand = brand?.name || "";
           piece.supplierId = supplier?.id || "";
           piece.image = image;
           if (file && imageImportMetadata.has(file))
@@ -256,28 +250,18 @@ modal = function (name, fields, callback) {
   if (isPiece) updateSupplierSuggestions();
 };
 function updateSupplierSuggestions() {
-  const input = $('#fields [name="supplierName"]');
-  if (!input) return;
-  const supplier = supplierDirectory().find(
-    (s) => supplierKey(s.name) === supplierKey(input.value),
-  );
-  const list = $("#contact-options");
-  if (list) {
-    const contacts = supplier ? relatedContacts(db, supplier) : db.contacts;
-    list.innerHTML = contacts
-      .map((c) => `<option value="${esc(contactLabel(c))}"></option>`)
-      .join("");
-    let note = $("#supplier-contact-hint");
-    if (!note) {
-      note = document.createElement("p");
-      note.id = "supplier-contact-hint";
-      list.parentElement.after(note);
-    }
-    note.className = "note";
-    note.textContent = supplier
-      ? `${contacts.length} interlocuteur(s) lié(s) proposé(s). Vous pouvez les ajouter dans Réseau.`
-      : "Choisissez une structure pour proposer ses contacts.";
-  }
+  const supplierInput = $('#fields [name="supplierName"]');
+  const choice = $('#piece-contact-choice');
+  if (!supplierInput || !choice) return;
+  const selected = choice.value || choice.dataset.currentContact || "";
+  const query = supplierKey($('#piece-contact-search')?.value || "");
+  const groups = pieceContactGroups(db, atelierSuppliers, $('#fields [name="brand"]')?.value || "", supplierInput.value);
+  choice.innerHTML = '<option value="">Sans contact pour le moment</option>' + groups.map(group => {
+    const contacts = group.contacts.filter(c => !query || supplierKey([contactLabel(c), c.email, c.role].join(' ')).includes(query) || contactLabel(c) === selected);
+    return contacts.length ? `<optgroup label="${esc(group.label)}">${contacts.map(c => `<option value="${esc(contactLabel(c))}" ${contactLabel(c)===selected?'selected':''}>${esc(contactLabel(c))}${c.email?' — '+esc(c.email):''}</option>`).join('')}</optgroup>` : '';
+  }).join('');
+  choice.dataset.currentContact = choice.value;
+  $('#supplier-contact-hint').textContent = db.contacts.length ? 'Contacts du fournisseur et de la marque en priorité. Le reste du carnet reste disponible ; un seul contact est lié à la pièce.' : 'Votre carnet ne contient pas encore de contact. Vous pourrez en associer un plus tard.';
 }
 renderContacts = function () {
   const directory = supplierDirectory();
@@ -448,9 +432,11 @@ document.addEventListener("input", (event) => {
     el.focus();
     el.setSelectionRange(position, position);
   }
-  if (event.target.name === "supplierName") updateSupplierSuggestions();
+  if (["supplierName", "brand"].includes(event.target.name) || event.target.id === "piece-contact-search") updateSupplierSuggestions();
 });
 document.addEventListener("change", (event) => {
+  if(event.target.id === "piece-contact-choice") event.target.dataset.currentContact = event.target.value;
+  if(["supplierName", "brand"].includes(event.target.name)) updateSupplierSuggestions();
   const id = event.target.id;
   if (id === "network-size") networkSize = Number(event.target.value);
   else if (id === "supplier-country") supplierCountry = event.target.value;

@@ -1,0 +1,31 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const {pieceContactGroups,groupSupplierPieces}=require('../public/supplier-model.js');
+const directory=[{id:'brand',name:'Été Paris',type:'Marque'},{id:'rental',name:'Location Bruxelles'}];
+const db={suppliers:[],contacts:[{id:'brand-contact',supplierId:'brand',name:'Presse',email:'presse@ete.fr'},{id:'rental-contact',supplierId:'rental',name:'Location',email:'location@costumes.be'},{id:'other-contact',name:'Assistante',email:'assistant@studio.fr'}],pieces:[]};
+const groups=pieceContactGroups(db,directory,'Ete Paris','Location Bruxelles');
+assert.deepEqual(groups.map(g=>g.contacts.map(c=>c.id)),[['rental-contact'],['brand-contact'],['other-contact']]);
+assert.equal(pieceContactGroups(db,directory,'Été Paris','Été Paris').flatMap(g=>g.contacts).length,3,'Aucun doublon quand marque et fournisseur sont identiques');
+db.pieces.push({id:'p',project:'project',brand:'Été Paris',supplierId:'rental',contact:'brand-contact'});
+assert(groupSupplierPieces(db,'project',directory)[0].contacts.some(c=>c.id==='brand-contact'),'Le contact choisi de la marque reste proposé dans la demande au fournisseur');
+const mail=require('../public/mail-model.js');
+const group=groupSupplierPieces(db,'project',directory)[0];
+const draft=mail.mailDraftFor({id:'project',name:'Test'},group,null,'Signature');
+assert.equal(draft.recipient,'presse@ete.fr','Le contact explicitement choisi prime pour le brouillon');
+const revised={...group,pieces:group.pieces.map(p=>({...p,contact:'rental-contact'}))};
+assert(mail.mailDraftFor({id:'project',name:'Test'},revised,draft,'Signature').stale,'Un changement de contact impose une relecture');
+
+// Exécuter le vrai parcours de sauvegarde du formulaire avec un carnet isolé.
+const source=fs.readFileSync('public/suppliers.js','utf8');
+let serial=0;const ctx={db,atelierSuppliers:directory,uid:()=>String(++serial),supplierKey:require('../public/supplier-model.js').supplierKey,supplierDirectory:()=>[...directory,...db.suppliers],getSupplier:id=>[...directory,...db.suppliers].find(s=>s.id===id),contactLabel:c=>c.name,safeUrl:()=>true,readImage:()=>{},imageImportMetadata:new WeakMap(),supplierEditingPieceId:'',$:()=>null};
+ctx.modal=(_name,_fields,fn)=>{ctx.saved=fn;};vm.createContext(ctx);
+vm.runInContext(source.slice(source.indexOf('function resolveSupplier('),source.indexOf('function editSupplier(')),ctx);
+vm.runInContext(source.slice(source.indexOf('const supplierFormModal = modal;'),source.indexOf('function updateSupplierSuggestions()')),ctx);
+ctx.updateSupplierSuggestions=()=>{};
+(async()=>{
+ ctx.modal('Pièce','name="piecePhoto"',(data)=>db.pieces.push({...data,id:'new'}));
+ await ctx.saved({brand:'Nouvelle marque',supplierName:'Nouveau loueur',contactName:'Presse'}, {elements:{}});
+ const piece=db.pieces.at(-1);assert(piece.brandId);assert(piece.supplierId);assert.notEqual(piece.brandId,piece.supplierId);
+ assert.equal(db.suppliers.find(s=>s.id===piece.brandId).type,'Marque');assert.equal(db.contacts[0].supplierId,'brand','Le contact conserve sa structure originale');
+ const size=db.suppliers.length;ctx.resolveSupplier(' nouvelle MARQUE ','Marque');assert.equal(db.suppliers.length,size,'Pas de doublon sur casse et espaces');
+ console.log('Contacts pièce : marque, fournisseur, carnet entier, création privée, dédoublonnage et relation du contact conservée : OK.');
+})().catch(e=>{console.error(e);process.exitCode=1;});
