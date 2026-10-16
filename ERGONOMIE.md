@@ -81,3 +81,7 @@ Le choix du contact d’une pièce propose les contacts du fournisseur puis de l
 À l’enregistrement réussi, une nouvelle marque est ajoutée au carnet privé avec le type Marque ; un nouveau fournisseur est ajouté avec l’activité à préciser. Les noms normalisés évitent les doublons. La pièce conserve brandId et supplierId distincts ; la référence de marque accompagne les documents du projet. Le contact choisi est proposé dans les demandes ; son changement ou une modification d’adresse invalide la validation du brouillon non envoyé. Aucun e-mail envoyé.
 
 Tests : classement marque/fournisseur/reste du carnet, même structure sans doublon, vrai callback de sauvegarde avec nouvelles structures, contact original conservé, destinataire choisi et brouillon à relire. Contrôles et suite complète réussis.
+
+## Version 0.16.5 — saisie sans zéro initial
+
+Prix, cautions, enveloppes, frais et tarifs du devis : un montant nul s’efface à l’entrée dans le champ, prêt pour la saisie. Si aucun chiffre n’est saisi, le zéro revient à la sortie. Les montants non nuls ne sont pas effacés. Aucun événement de sauvegarde n’est déclenché par le simple focus.
