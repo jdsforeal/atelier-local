@@ -151,3 +151,11 @@ Validation : suite complète, test réel d’une capture ASOS Pull&Bear (nom, ma
 Les fiches et l’import par lot partagent deux cartes de sources, une zone de dépôt commune et les mêmes vignettes sélectionnables. Les champs fichier natifs sont remplacés visuellement par une zone cliquable, toujours accessible au clavier. Les captures associées au lot ne créent plus un second aperçu transitoire : leur aperçu reste dans la fiche. Les cartes se réorganisent selon la largeur réelle de la fenêtre, y compris dans une modale étroite. Les boutons désactivés restent visibles et leur zone signale l’indisponibilité.
 
 Contrôles : dépôt simple/multiple et fichiers refusés, syntaxe des modules, rendu des cartes ordinateur/téléphone et sélection des photos boutique. Aucun changement de sauvegarde ou d’analyse des données.
+
+## Version 0.18.2 — analyse séparée de la fiche pièce
+
+La fiche pièce affiche un accès compact « Analyser une pièce ». Une fenêtre dédiée propose Lien, Image ou Lien + image ; une seule action lance l’analyse. La seconde étape présente les propositions et photos à cocher. « Reporter dans la fiche » ferme l’analyse et remplit uniquement les champs choisis, sans créer la pièce. Les champs existants ne sont pas cochés par défaut, sauf la catégorie initiale d’une nouvelle pièce. La fiche montre les photos retenues ; l’enregistrement et le cadrage gardent leur étape habituelle.
+
+Annuler ou fermer l’analyse conserve les saisies de la fiche ; un résultat tardif ne les modifie pas. Les sources peuvent être reprises avant validation. Une capture utilisée comme photo principale et les vues boutique sont conservées ensemble (huit photos maximum). La capture n’est pas présélectionnée comme photo si des images boutique ont été trouvées. L’import par lot reste accessible depuis le projet.
+
+Vérifications : analyse réelle ASOS et capture originale, choix des champs, maintien d’un nom personnel et champ décoché laissé vide, photo principale, report du fichier capture, annulation pendant lecture, fenêtre sans débordement à 390 pixels. Test de sauvegarde de la galerie mixte ajouté au parcours du formulaire ; suite complète validée. Aucun document du studio créé lors des essais.
