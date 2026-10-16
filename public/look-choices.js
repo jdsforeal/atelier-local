@@ -13,7 +13,7 @@ function choiceCard(piece, archived) {
     ${pieceGallery(piece)}
     <div class="choice-body"><small>${esc(piece.brand)}</small><h3>${esc(piece.name)}</h3>
     <span class="tag">${esc(piece.selection || "À comparer")}</span>
-    <p>${esc(piece.mode)} · coût ${euro(piece.price)} ${piece.commit ? "· engagé" : "· prévision si retenue"}</p>
+    <p>${esc(piece.mode)} · ${typeof purchaseCostLabel==='function'?purchaseCostLabel(piece):'coût '+euro(piece.price)} ${piece.commit ? "· engagé" : "· prévision si retenue"}</p>
     <small>Disponibilité : ${esc(typeof flowAvailability === "function" ? flowAvailability(piece, project()) : piece.status)} · Suivi : ${esc(piece.status)}${piece.clientApproval ? " · choix validé par le client" : ""}</small>
     ${piece.selectionReason ? `<p class="choice-reason">${esc(piece.selectionReason)}</p>` : ""}
     <div class="actions">${!archived && !retained && piece.selection !== "Écartée" ? `<button class="primary" data-retain-piece="${esc(piece.id)}">Retenir</button>` : ""}
@@ -78,7 +78,7 @@ function lookChoicesView(project) {
                 piece.selection === "Retenue",
             );
             return `<div class="need-section"><div class="section-head"><div><h3>${esc(need.name)}</h3><small>${need.multiple ? "Plusieurs pièces finales possibles" : "Une pièce finale"} · ${options.length} options dans cette piste · ${retained.length} retenue${retained.length > 1 ? "s" : ""} au total</small></div>
-            ${!archived ? `<button class="quiet" data-multiple-need="${esc(look.id)}:${esc(need.id)}">Réglage</button><button data-add-option="${esc(look.id)}:${esc(need.id)}">＋ Une option</button>` : ""}</div>
+            ${!archived ? `<button class="quiet" data-multiple-need="${esc(look.id)}:${esc(need.id)}">Réglage</button><button data-add-option="${esc(look.id)}:${esc(need.id)}">＋ Une option</button><button data-batch-import-launch data-import-look="${esc(look.id)}">＋ Plusieurs liens / images</button>` : ""}</div>
             ${
               retained.some((piece) => piece.variantId !== look.activeVariant)
                 ? `<p class="note">Une pièce de l’autre piste est retenue : ${retained

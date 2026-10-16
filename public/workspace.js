@@ -431,9 +431,11 @@ function editExpense(id) {
         "select",
         x.state || "Prévu",
         ["Prévu", "Engagé", "Payé", "Annulé"].map((v) => [v, v]),
-      ),
-    (d) => {
-      const obj = { ...d, amount: Number(d.amount) };
+      ) + (typeof purchaseTaxFields==='function'?purchaseTaxFields(x.purchaseTax,'expense'):''),
+    (d,form) => {
+      const purchaseTax=typeof purchaseTaxRead==='function'?purchaseTaxRead(form,'expense'):x.purchaseTax;
+      const obj = { ...d, amount: Number(d.amount),...(purchaseTax?{purchaseTax}:{}) };
+      for(const key of ['expenseBasis','expenseRate','expenseRecovery','expenseConfirmed'])delete obj[key];
       if (id) Object.assign(x, obj);
       else db.expenses.push({ ...obj, id: uid(), project: pid });
     },

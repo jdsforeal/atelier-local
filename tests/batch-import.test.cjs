@@ -17,3 +17,5 @@ const ambiguous=m.batchOCRProposal('Mocassins en cuir\n99,99 €\n79,99 €',70)
 const plain=m.batchOCRProposal('Une photo sans texte utile',70);assert.equal(plain.price,null);assert.equal(plain.category,'');assert.equal(plain.brand,'');
 const combined=m.batchCombine({source:'url',name:'Nom slug',url:row.url,images:[],notice:'Site bloqué'},ocr);assert.equal(combined.name,ocr.name);assert.equal(combined.price,39.99);assert.equal(combined.url,row.url);
 console.log('Import par lot : aucune écriture avant validation, catégories, structures, doublons, montants, droits, URLs et propositions OCR vérifiés.');
+
+const tax={basis:'TTC',rate:21,recovery:'full',confirmed:true};const taxed=m.batchBuild(original,[{...row,purchaseTax:tax}],options);assert.deepEqual(taxed.pieces[0].purchaseTax,tax);assert.equal(require('../public/budget-model.js').projectFinancials({...taxed,pieces:taxed.pieces.map(p=>({...p,selection:'Retenue'}))},{id:'p',budget:100}).forecast,27.26);assert.equal(m.batchBuild(original,[{...row,purchaseTax:tax}],{...options,canFinance:false}).pieces[0].purchaseTax,undefined);

@@ -3,6 +3,7 @@ const CLOUD_FINANCIAL_KEYS = new Set([
   "budget",
   "envelopeBasis",
   "price",
+  "purchaseTax",
   "publicPrice",
   "caution",
   "commit",
@@ -81,6 +82,7 @@ function cloudProjectDocuments(database, project) {
 }
 function cloudGlobalDocument(database) {
   return {
+    studioTaxProfile: database.studioTaxProfile || {},
     contacts: database.contacts || [],
     suppliers: database.suppliers || [],
     pieces: (database.pieces || []).filter((x) => !x.project),

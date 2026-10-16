@@ -196,6 +196,7 @@ pieceForm = function (piece = {}) {
       "url",
       piece.image?.startsWith("http") ? piece.image : "",
     ) +
+    (typeof purchaseTaxFields==='function'?purchaseTaxFields(piece.purchaseTax):'') +
     '<label>Importer une photo (facultatif)<input name="piecePhoto" type="file" accept="image/jpeg,image/png,image/webp"></label>'
   );
 };
@@ -213,6 +214,7 @@ modal = function (name, fields, callback) {
           const creatingContact = data.newContactMode === "1";
           if (creatingContact && (!String(data.newContactName||"").trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(data.newContactEmail||"").trim()))) throw Error("Complétez le nom et une adresse e-mail valide pour le nouveau contact.");
           let contact = creatingContact ? null : db.contacts.find(c => contactLabel(c) === data.contactName);
+          const purchaseTax=typeof purchaseTaxRead==='function'?purchaseTaxRead(form):null;
           const file = form.elements.piecePhoto?.files[0];
           const image = file
             ? await readImage(file)
@@ -246,6 +248,7 @@ modal = function (name, fields, callback) {
           piece.brand = brand?.name || "";
           piece.supplierId = supplier?.id || "";
           piece.image = image;
+          if(purchaseTax){piece.purchaseTax=purchaseTax;for(const key of Object.keys(piece))if(/^purchase(Basis|Rate|Recovery|Confirmed)$/.test(key))delete piece[key];}
           if (form.dataset?.productImages) {
             try { const imported=JSON.parse(form.dataset.productImages).filter(url=>safeUrl(url));piece.photos=[...new Set(file?[image,...imported]:imported)].slice(0,8); } catch { piece.photos = []; }
           } else if (piece.photos?.length && piece.photos[0] !== image) {

@@ -19,24 +19,26 @@ function projectFinancials(database, project) {
   const committedExpenses = expenses.filter((e) =>
     ["Engagé", "Payé"].includes(e.state),
   );
-  const costs = sum(committed, "price") + sum(committedExpenses, "amount");
+  const calculate=typeof purchaseAmounts==='function'?purchaseAmounts:typeof require==='function'?require('./tax-model.js').purchaseAmounts:null;
+  const basis=project.envelopeBasis||'HT';
+  const cost=(row,key)=>calculate?calculate(row[key],row.purchaseTax,basis).budget:amount(row[key]);
+  const costSum=(rows,key)=>rows.reduce((total,row)=>total+cost(row,key),0);
+  const plannedExpenses=expenses.filter(e=>!['Engagé','Payé'].includes(e.state));
+  const active=[...committed,...selected,...expenses];
+  const costs = costSum(committed, "price") + costSum(committedExpenses, "amount");
   const forecast =
     costs +
-    sum(selected, "price") +
-    sum(
-      expenses.filter((e) => !["Engagé", "Payé"].includes(e.state)),
-      "amount",
-    );
+    costSum(selected, "price") +
+    costSum(plannedExpenses, "amount");
   return {
+    taxPending:calculate?active.filter(row=>calculate(row.price??row.amount,row.purchaseTax,basis).pending).length:0,
+    cashForecast:calculate?active.reduce((n,row)=>{const a=calculate(row.price??row.amount,row.purchaseTax,basis);return n+(a.gross??a.raw);},0):forecast,
     costs,
     forecast,
     remaining: amount(project.budget) - forecast,
     committedRemaining: amount(project.budget) - costs,
-    selectedCost: sum(selected, "price"),
-    plannedExpenses: sum(
-      expenses.filter((e) => !["Engagé", "Payé"].includes(e.state)),
-      "amount",
-    ),
+    selectedCost: costSum(selected, "price"),
+    plannedExpenses: costSum(plannedExpenses, "amount"),
     caution: sum(
       committed.filter((p) => !p.cautionReturned),
       "caution",

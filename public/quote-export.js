@@ -50,7 +50,7 @@ function quoteDocumentSettings() {
         "issuerIdentifier",
         "Identifiant professionnel — facultatif",
         "text",
-        s.identifier || "",
+        s.identifier || db.studioTaxProfile?.vatNumber || "",
       ) +
       field(
         "clientName",

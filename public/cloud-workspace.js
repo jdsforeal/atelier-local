@@ -546,8 +546,10 @@ document.addEventListener("click", async (event) => {
       modal(
         "Créer mon studio privé",
         field("name", "Nom du studio") +
+          studioTaxFields() +
           "<p>Les projets restent privés. Vous choisirez ensuite qui peut accéder à chaque projet.</p>",
         async (d) => {
+          const taxProfile=studioTaxFromForm(d);
           const id = await cloudResult(
             cloudState.client.rpc("atelier_create_studio", { p_name: d.name }),
           );
@@ -555,6 +557,7 @@ document.addEventListener("click", async (event) => {
             cloudState.client.from("atelier_studios").select("*"),
           );
           await cloudLoadStudio(id);
+          db.studioTaxProfile=taxProfile;save();await cloudFlush();
         },
       );
     if (b.hasAttribute("data-cloud-open-studio")) {
