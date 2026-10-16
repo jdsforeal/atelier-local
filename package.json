@@ -1,6 +1,6 @@
 {
   "name": "atelier-styliste",
-  "version": "0.16.2",
+  "version": "0.16.3",
   "private": true,
   "description": "Atelier de stylisme : pilote privé et simulation locale",
   "scripts": {

@@ -393,6 +393,9 @@ function messages(p) {
   return `<div class="panel"><div class="eyebrow">PRÉPARATION DE DEMANDE · MODÈLE SANS IA</div><h2>Un message personnel, prêt à adapter.</h2><p class="note">Aucun mail n’est envoyé par Atelier. Copiez le texte ou ouvrez votre messagerie pour le relire et l’envoyer.</p><label>Destinataire<input id="recipient" type="email" placeholder="contact@marque.fr"></label><label>Votre demande<textarea class="draft" id="draft">${esc(`Bonjour,\n\nJe vous contacte pour le projet « ${p.name} » (${p.client}), prévu le ${date(p.date)}.\n\n${p.brief}\n\nNous aimerions connaître les disponibilités et les conditions pour les pièces suivantes :\n${selected.map((x) => "• " + x.name + " — " + x.brand + " (" + x.mode.toLowerCase() + ")").join("\n") || "• À préciser"}\n\nPourriez-vous nous confirmer les tailles disponibles, les dates possibles et les modalités ?\n\nMerci beaucoup,\n[Votre signature]`)}</textarea></label><div class="actions"><button class="primary" id="copy-draft">Copier le message</button><button id="open-mail">Ouvrir ma messagerie ↗</button><button data-action="task">Créer un rappel de relance</button></div><p class="note">Les envois, réponses et relances automatiques seront ajoutés après connexion et test de votre messagerie.</p></div>`;
 }
 function field(name, label, type = "text", value = "", choices) {
+  if (type === "number" && ["price", "caution", "budget", "amount", "rate"].includes(name)) {
+    return `<label>${label}<input name="${name}" type="text" inputmode="decimal" pattern="[0-9]+([,.][0-9]{1,2})?" title="Montant positif, avec au maximum deux décimales (ex. 32,99)" value="${esc(String(value).replace('.', ','))}" data-money-field></label>`;
+  }
   return `<label>${label}${type === "textarea" ? `<textarea name="${name}">${esc(value)}</textarea>` : type === "select" ? `<select name="${name}">${choices.map(([v, n]) => `<option value="${esc(v)}" ${v === value ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : `<input name="${name}" type="${type}" value="${esc(value)}" ${["name", "title"].includes(name) ? "required" : ""} ${type === "file" ? 'accept="image/jpeg,image/png,image/webp"' : ""} ${type === "number" ? 'min="0"' : ""}>`}</label>`;
 }
 let submit;
@@ -581,7 +584,11 @@ $("#form").onsubmit = async (e) => {
   const button = e.submitter;
   button.disabled = true;
   try {
-    await submit(Object.fromEntries(new FormData(e.target)), e.target);
+    const values = Object.fromEntries(new FormData(e.target));
+    e.target.querySelectorAll('[data-money-field]').forEach(input => {
+      if (!input.disabled) values[input.name] = input.value.replace(',', '.');
+    });
+    await submit(values, e.target);
     if (!save())
       throw Error(
         "Stockage plein : exportez une sauvegarde et libérez de la place. Votre modification reste en mémoire, mais n’est pas sauvegardée.",
