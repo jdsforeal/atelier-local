@@ -93,3 +93,13 @@ Le bouton Ajouter un contact ouvre une fiche courte dans le formulaire courant, 
 La validation de la pièce crée ou retrouve le contact privé (e-mail et mêmes structures), associe brandId et supplierId, puis sélectionne ce contact sur la pièce. Les suggestions reconnaissent ses deux rattachements. Aucun contact ni structure n’est conservé si la validation du callback échoue ; annuler la fiche n’effectue aucune écriture. Les champs temporaires ne restent pas sur la pièce. Aucun envoi Gmail.
 
 Vérifications : parcours de sauvegarde, double rattachement, e-mail normalisé et retour arrière après échec, suite complète. Navigateur : carnet vide, ouverture inline, nom/e-mail conservés pendant le changement de marque et contexte mis à jour. Page de vérification avec données de démonstration, supprimée après vérification ; aucun projet privé modifié.
+
+## Version 0.17.0 — importer une fiche boutique
+
+Dans la fiche pièce, coller un lien puis Analyser le lien propose les informations publiées : nom, marque, boutique, prix en euros, description et photo disponible. Les champs déjà renseignés ne sont pas cochés ; les champs vides le sont. Une sélection explicite permet de remplacer une valeur. La photo reste facultative. Utiliser les informations ne sauvegarde pas la pièce.
+
+Le lien ASOS fourni a été testé avec la vraie page : marque 4505, prix 32,99 €, image produit. Le nom saisi manuellement est conservé pendant l’application des autres propositions. Les métadonnées et données structurées sont lues sans exécuter le code de la boutique. Le prix ASOS est associé à l’identifiant produit et ignore les recommandations.
+
+Le service Supabase product-import vérifie chaque session auprès de Supabase Auth, limite les appels et les origines, refuse les redirections hors des boutiques autorisées et ne lit ni n’écrit les projets. L’ancien contrôle JWT du portail est remplacé par cette validation sur autorisation explicite. Un appel anonyme sur le service déployé retourne 401. La validation avec une session réelle en ligne reste à effectuer après publication du frontend.
+
+Limites : certains sites bloquent la lecture ; repli signalé sur les mots du lien sans inventer de prix ou photo. Boutique et fournisseur réel peuvent différer sur une marketplace. Aucune analyse OCR d’image dans cette version.

@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import model from '../public/product-import-model.js';
+import {fetchProduct} from '../product-import/fetch-product.mjs';
+const url='https://www.asos.com/fr/4505/4505-rest-day-t-shirt-henley-a-manches-longues-en-maille-gaufree-blanc-casse/prd/211023426#colourWayId-211023430';
+const link=model.productFromURL(url);assert.equal(link.brand,'4505');assert.equal(link.supplier,'ASOS');assert.equal(link.price,null);assert.equal(link.source,'url');
+for(const value of ['javascript:alert(1)','http://127.0.0.1/','https://user:pass@www.asos.com/'])assert.throws(()=>model.productFromURL(value));
+const html=`<script type="application/ld+json">${JSON.stringify({'@graph':[{'@type':'Product',name:'Henley & coton',brand:{name:'4505'},offers:{price:'32.99',priceCurrency:'EUR'},image:['https://images.asos-media.com/a.jpg'],description:'<b>Maille</b> gaufrée'}]})}</script>`;
+const parsed=model.parseProductHTML(html,url);assert.equal(parsed.price,32.99);assert.equal(parsed.currency,'EUR');assert.equal(parsed.brand,'4505');assert.equal(parsed.description,'Maille gaufrée');assert.equal(parsed.images.length,1);
+const stock=`<meta property="og:title" content="4505 Henley | ASOS"><script>window.asos.pdp.config.stockPriceResponse = '[{"productId":1,"productPrice":{"current":{"value":999},"currency":"EUR"}},{"productId":211023426,"productPrice":{"current":{"value":32.99},"currency":"EUR"}}]';</script>`;
+assert.equal(model.parseProductHTML(stock,url).price,32.99,'Le prix d’une recommandation doit être ignoré');
+let calls=0;const blocked=await fetchProduct('https://boutique.example.com/item',()=>{calls++;throw Error();});assert.equal(calls,0);assert.equal(blocked.source,'url');
+const redirected=await fetchProduct(url,async()=>{calls++;return new Response('',{status:302,headers:{location:'http://127.0.0.1/private'}});});assert.equal(calls,1,'Ne pas suivre une redirection privée');assert.equal(redirected.source,'url');
+const fallback=await fetchProduct(url,async()=>new Response('blocked',{status:403}));assert.equal(fallback.price,null);assert(fallback.notice.includes('capture'));
+const result=await fetchProduct(url,async()=>new Response(html,{headers:{'content-type':'text/html'}}));assert.equal(result.price,32.99);
+console.log('Import produit : données publiées, repli URL, prix du bon article, HTTPS, domaines et redirections vérifiés.');

@@ -1,4 +1,5 @@
 import http from "node:http";
+import {fetchProduct} from "./product-import/fetch-product.mjs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -15,6 +16,16 @@ const types = {
   ".svg": "image/svg+xml",
 };
 const server = http.createServer(async (req, res) => {
+  if (req.url === "/api/product-import" && req.method === "POST") {
+    const origin = req.headers.origin;
+    if(origin !== `http://127.0.0.1:${port}` && origin !== `http://localhost:${port}`){res.writeHead(403);res.end();return;}
+    try {
+      let body='';for await(const chunk of req){body+=chunk;if(body.length>20000)throw Error('Lien trop long.');}
+      const data=await fetchProduct(JSON.parse(body).url);
+      res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(data));
+    }catch{res.writeHead(400,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'Lien produit https invalide.'}));}
+    return;
+  }
   if (!["GET", "HEAD"].includes(req.method)) {
     res.writeHead(405);
     res.end();

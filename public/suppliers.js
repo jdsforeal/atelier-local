@@ -187,7 +187,7 @@ pieceForm = function (piece = {}) {
   );
   form = form.replace(/<label>Contact —[\s\S]*?<\/label>/, `<div class="piece-contact-picker"><div class="piece-contact-heading"><strong>Qui contacter pour cette pièce ?</strong><button type="button" data-piece-new-contact>＋ Ajouter un contact</button></div><div data-piece-existing-contact ${db.contacts.length?'':'hidden'}><label>Rechercher dans mon carnet<input id="piece-contact-search" type="search" placeholder="Nom, marque ou e-mail…" autocomplete="off"></label><label>Contact lié à cette pièce<select name="contactName" id="piece-contact-choice" data-current-contact="${esc(db.contacts.find(c=>c.id===piece.contact)?contactLabel(db.contacts.find(c=>c.id===piece.contact)):"")}"></select></label></div><input type="hidden" name="newContactMode" value="0"><div data-piece-contact-create hidden><p>Le contact sera enregistré dans votre carnet et associé à cette pièce.</p><div class="piece-contact-context"><label>Marque associée<input data-contact-brand-context readonly aria-label="Marque associée au nouveau contact"></label><label>Fournisseur associé<input data-contact-supplier-context readonly aria-label="Fournisseur associé au nouveau contact"></label></div><label>Nom ou service<input name="newContactName" placeholder="Ex. Camille · service presse" disabled></label><label>Adresse e-mail<input name="newContactEmail" type="email" placeholder="contact@marque.fr" disabled></label><button type="button" class="quiet" data-piece-contact-cancel>Annuler l’ajout du contact</button></div><p id="supplier-contact-hint" class="note"></p></div>`);
   return (
-    form +
+    productImportPanel() + form +
     '<p class="note">Une nouvelle marque ou un nouveau fournisseur sera ajouté à votre carnet privé en enregistrant cette pièce.</p>' +
     brandList +
     field(
@@ -233,7 +233,7 @@ modal = function (name, fields, callback) {
             }
             data.contactName = contactLabel(contact);
           }
-          delete data.newContactMode; delete data.newContactName; delete data.newContactEmail;
+          delete data.newContactMode; delete data.newContactName; delete data.newContactEmail; delete data.productImportImageChoice;
           await callback(data, form);
           const supplier = resolveSupplier(
             data.supplierName || getSupplier(contact?.supplierId)?.name || "",

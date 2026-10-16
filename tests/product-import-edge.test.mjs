@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFile} from 'node:fs/promises';
+let handler,authCalls=0;
+const context=vm.createContext({URL,Response,Request,TextDecoder,Uint8Array,AbortSignal,console,setTimeout,clearTimeout,Deno:{env:{get:key=>key==='SUPABASE_URL'?'https://auth.example':'public-test-key'},serve:fn=>handler=fn},fetch:async(url)=>{authCalls++;assert.equal(url,'https://auth.example/auth/v1/user');return Response.json({id:'test-user'});}});
+vm.runInContext(await readFile(new URL('../supabase/functions/product-import/index.ts',import.meta.url),'utf8'),context);
+const request=(origin,token,body)=>new Request('https://edge.example',{method:'POST',headers:{Origin:origin,...(token?{Authorization:'Bearer '+token}:{}),'Content-Type':'application/json'},body:JSON.stringify(body)});
+let response=await handler(request('https://jdsforeal.github.io','',{url:'https://boutique.example/item'}));assert.equal(response.status,401);assert.equal(authCalls,0);
+response=await handler(request('https://intrus.example','fake',{url:'https://boutique.example/item'}));assert.equal(response.status,403);assert.equal(authCalls,0);
+response=await handler(request('https://jdsforeal.github.io','session-test',{url:'https://boutique.example/mon-produit'}));assert.equal(response.status,200);assert.equal(authCalls,1);assert.equal((await response.json()).source,'url');
+context.fetch=async()=>Response.json({error:'expired'},{status:401});response=await handler(request('https://jdsforeal.github.io','expired',{url:'https://boutique.example/item'}));assert.equal(response.status,401);
+console.log('Import cloud : origine, compte absent, compte vérifié et session expirée contrôlés, sans accès privé.');
