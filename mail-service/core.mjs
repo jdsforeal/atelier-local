@@ -1,4 +1,8 @@
-import { randomUUID } from "node:crypto";
+const randomUUID = () => globalThis.crypto.randomUUID();
+function mailBase64(text) {
+  if (typeof Buffer !== "undefined") return Buffer.from(text).toString("base64");
+  return btoa(Array.from(new TextEncoder().encode(text),byte=>String.fromCharCode(byte)).join(""));
+}
 const DAY = 86400000;
 export function validEmail(value) {
   return (
@@ -59,7 +63,7 @@ export function makeMime(job, from, followup = false) {
   const headers = [
     `From: ${from}`,
     `To: ${job.recipient}`,
-    `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
+    `Subject: =?UTF-8?B?${mailBase64(subject)}?=`,
     `Message-ID: <${job.outboundId}@atelier.local>`,
     "MIME-Version: 1.0",
     "Content-Type: text/plain; charset=UTF-8",
@@ -70,14 +74,13 @@ export function makeMime(job, from, followup = false) {
       "In-Reply-To: " + job.rfcMessageId,
       "References: " + job.rfcMessageId,
     );
-  return Buffer.from(
+  return mailBase64(
     headers.join("\r\n") +
       "\r\n\r\n" +
-      Buffer.from(followup ? job.reminderBody : job.body)
-        .toString("base64")
+      mailBase64(followup ? job.reminderBody : job.body)
         .match(/.{1,76}/g)
         .join("\r\n"),
-  ).toString("base64url");
+  ).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 }
 export function detectReply(thread, job) {
   const newer = (thread.messages || []).filter(
@@ -127,6 +130,7 @@ export function addJobs(account, inputs, now = Date.now()) {
 export async function processAccount(account, api, persist, now = Date.now()) {
   for (const job of account.jobs || []) {
     if (account.disabled) return;
+    if(api.authorize){try{await api.authorize(job);}catch{job.error="Accès au projet à vérifier : envoi et relance suspendus.";persist();continue;}}
     if (job.paused && job.state === "En attente d’envoi") continue;
     if (job.state === "Envoi en cours") {
       job.state = "Envoi à vérifier";

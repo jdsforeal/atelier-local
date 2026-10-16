@@ -45,3 +45,13 @@ Vérifié sur le pilote connecté : mise à la corbeille du projet « Vérificat
 Carnet : deux boutons regroupés « Ajouter un contact » et « Ajouter une marque ou un fournisseur », suivis d’une définition claire. Les onglets de consultation restent séparés des actions de création. Le texte de sauvegarde précise désormais le studio privé lorsque connecté.
 
 Gmail : protections côté serveur par défaut en mode sandbox ; liste exacte d’adresses autorisées, vide par défaut ; contrôle atomique du lot puis contrôle du transport initial et des relances. Refus de Cc/Bcc. Tests sans réseau Gmail réussis. Le service reste non activé ; les essais réels nécessiteront OAuth Gmail et un service local (gratuit tant que lancé) ou hébergé. Aucun destinataire réel du répertoire n’a été contacté. Protocole dans mail-service/README.md.
+
+## Version 0.16 — laboratoire et pilote Gmail local
+
+La purge horaire à 30 jours a depuis été explicitement autorisée puis activée et vérifiée dans Supabase (atelier-project-trash-retention, minute 7 de chaque heure). Cette confirmation remplace la mention NON ACTIVÉ de la version précédente. Le nettoyage physique des images reste à développer.
+
+Un laboratoire sans réseau reprend un brouillon fournisseur et permet de simuler envoi, réponse, passage du temps et panne de lecture. Aucun envoi réel ni modification du projet. Vérifié dans le navigateur : réponse reçue sans relance, absence de réponse avec une seule relance, panne de lecture sans relance. Le moteur partagé fonctionne aussi dans le navigateur sans Buffer.
+
+Le service Gmail local impose le propriétaire du studio, un jeton Atelier valide, un projet actif et accessible, et une liste exacte de destinataires de test. Ces contrôles précèdent chaque envoi et relance. Les objets commencent par [TEST ATELIER]. Les identifiants OAuth et jetons sont conservés hors du dépôt, dans une configuration privée ; aucun secret dans le code public. Les envois sont suspendus si la session Atelier expire ou si le projet devient inaccessible. Le service local doit rester lancé : ce n’est pas une infrastructure permanente.
+
+Gmail API activée par le propriétaire le 16 octobre. Le client OAuth local reste à créer/importer ; aucune autorisation Gmail ni transmission réelle effectuée. La console Google du navigateur de travail échoue au chargement des clients. Tests de droits, transport, moteur navigateur et suite du pilote réussis.

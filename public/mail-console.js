@@ -1,6 +1,9 @@
 /** Tableau des demandes. Les autorisations Gmail restent dans le service privé. */
 const mailSelection = new Set();
 let mailFilter = "Tout",
+  mailServiceMode = "",
+  mailTestRecipients = [],
+  mailServiceLocal = false,
   mailBusy = false,
   mailSession = null,
   mailPopup = null,
@@ -95,7 +98,7 @@ function mailRowHTML(p, { group: g, draft: d }) {
     error = mailValidationError(d, demoMode),
     status = mailStatus(d);
   const contacts = g?.contacts || [];
-  const options = [
+  let options = [
     ...new Map(
       contacts
         .filter(
@@ -106,6 +109,7 @@ function mailRowHTML(p, { group: g, draft: d }) {
         .map((c) => [c.email, c]),
     ).values(),
   ];
+  if(mailServiceMode === "sandbox")options=mailTestRecipients.map(email=>({email,name:"Adresse de test autorisée"}));
   if (d.recipient && !options.some((c) => c.email === d.recipient))
     options.push({ email: d.recipient, name: d.recipient });
   return `<article class="mail-row ${d.state === "Validé" && !d.stale ? "mail-approved" : ""}" data-mail-row="${esc(d.id)}"><div class="mail-row-head"><label class="mail-tick"><input type="checkbox" data-mail-select="${esc(d.id)}" ${mailSelection.has(d.id) ? "checked" : ""} ${locked || g?.key === "unassigned" ? "disabled" : ""}><strong>${esc(d.supplierName)}</strong></label><span class="mail-state">${esc(status)}</span></div><div class="mail-row-grid"><div><label>Destinataire<select data-mail-field="recipient" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}><option value="">Choisir un contact lié</option>${options.map((c) => `<option value="${esc(c.email)}" ${c.email === d.recipient ? "selected" : ""}>${esc(c.name)} · ${esc(c.email)}</option>`).join("")}</select></label><p class="mail-pieces">${g ? `${g.pieces.length} pièce(s) · ${[...new Set(g.pieces.map((x) => x.name))].map(esc).join(" · ")}` : `${(d.pieces || []).length} pièce(s) dans la demande enregistrée`}</p>${!options.length && !mailIsSent(d) ? `<p class="note">Ajoutez une adresse au contact lié.</p>${g?.supplier ? `<button data-add-supplier-contact="${esc(g.supplier.id)}">Ajouter un contact</button>` : ""}` : ""}</div><div><strong>${esc(d.subject)}</strong><p class="mail-excerpt">${esc(d.body?.replace(/\n+/g, " ").slice(0, 180) || "Message à compléter")}</p>${d.sentAt ? `<small>Envoyé le ${mailTime(d.sentAt)} · vérifié ${mailTime(d.lastCheckedAt)}</small>` : ""}${d.error ? `<p class="mail-error">${esc(d.error)}</p>` : ""}</div><div class="mail-row-actions">${!mailIsSent(d) ? `<label class="mail-tick"><input type="checkbox" data-mail-approve="${esc(d.id)}" ${d.state === "Validé" && !d.stale ? "checked" : ""} ${locked || g?.key === "unassigned" ? "disabled" : ""}> Message relu et validé</label>${error ? `<small>${esc(error)}</small>` : ""}<label class="mail-tick"><input type="checkbox" data-mail-field="reminderEnabled" data-mail-id="${esc(d.id)}" ${d.reminderEnabled ? "checked" : ""} ${locked ? "disabled" : ""}> Relancer si aucune réponse</label><label>Délai<select data-mail-field="reminderDays" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}>${[2, 3, 5, 7, 14].map((n) => `<option value="${n}" ${Number(d.reminderDays || 3) === n ? "selected" : ""}>Après ${n} jours</option>`).join("")}</select></label>` : `<p>${d.reminderCount ? "Relance envoyée le " + mailTime(d.reminderSentAt) : d.reminderEnabled && !d.paused ? "Relance prévue le " + mailTime(d.nextReminderAt) : "Relance arrêtée / non activée"}</p>${d.reminderEnabled && !d.paused ? `<button data-mail-pause="${esc(d.id)}" ${!mailSession || mailBusy ? "disabled" : ""}>Arrêter la relance</button>` : ""}${d.threadId ? `<a href="https://mail.google.com/mail/u/${encodeURIComponent(d.mailAccount || mailSession?.email || "0")}/#all/${encodeURIComponent(d.threadId)}" target="_blank" rel="noopener">Voir la conversation ↗</a>` : ""}`}</div></div><details class="mail-editor"><summary>${mailIsSent(d) ? "Voir le message envoyé et le journal" : "Lire et modifier le message et sa relance"}</summary><label>Objet<input value="${esc(d.subject)}" data-mail-field="subject" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}></label><label>Message<textarea rows="10" data-mail-field="body" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}>${esc(d.body)}</textarea></label><label>Relance · envoyée au maximum une fois<textarea rows="5" data-mail-field="reminderBody" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}>${esc(d.reminderBody || "")}</textarea></label>${d.history ? `<ul>${d.history.map((h) => `<li>${mailTime(h.at)} · ${esc(h.event)}</li>`).join("")}</ul>` : ""}</details></article>`;
@@ -162,7 +166,7 @@ messages = function (p) {
         d.deliveryState === "En attente de réponse") ||
       (mailFilter === "Réponses" && d.deliveryState === "Réponse reçue"),
   );
-  return `<div class="section-head"><div><h2>Vos demandes, d’un coup d’œil.</h2><p>Un message par fournisseur. Relisez, validez puis envoyez les messages cochés en un seul lot.</p></div><button data-mail-settings>Ma signature et mes réglages</button></div><div class="mail-connection"><div><strong>${demoMode ? "Simulation · aucun envoi réel" : mailSession ? "Gmail connecté · " + esc(mailSession.email) : "Gmail non connecté"}</strong><p>${mailSession ? "Le service hébergé assure le suivi même lorsque ce navigateur est fermé." : "Les brouillons et leur validation fonctionnent ici. L’envoi et les relances nécessitent l’activation du service Gmail par le propriétaire."}</p>${mailServiceError ? `<p class="mail-error">${esc(mailServiceError)}</p>` : ""}</div><div class="actions">${!demoMode && mailSession ? "<button data-mail-sync>Vérifier les réponses</button><button data-mail-connect>Renouveler la connexion</button><button data-mail-disconnect>Déconnecter et suspendre</button>" : "<button data-mail-connect " + (demoMode ? "disabled" : "") + ">Connecter Gmail</button>"}</div></div><div class="toolbar mail-filters">${Object.entries(
+  return `<div class="section-head"><div><h2>Vos demandes, d’un coup d’œil.</h2><p>Un message par fournisseur. Relisez, validez puis envoyez les messages cochés en un seul lot.</p></div><button data-mail-settings>Ma signature et mes réglages</button></div><div class="mail-connection"><div><strong>${demoMode ? "Simulation · aucun envoi réel" : mailSession ? (mailServiceMode === "sandbox" ? "Gmail · ESSAIS LIMITÉS · " : "Gmail connecté · ") + esc(mailSession.email) : "Gmail non connecté"}</strong><p>${mailSession ? (mailServiceLocal ? "Service local : le suivi fonctionne uniquement tant que le service reste lancé sur cet ordinateur." : "Le service assure le suivi tant qu’il reste actif.") + (mailServiceMode === "sandbox" ? " Seules les adresses de test autorisées peuvent recevoir des messages." : "") : "Les brouillons et leur validation fonctionnent ici. L’envoi et les relances nécessitent l’activation du service Gmail par le propriétaire."}</p>${mailServiceError ? `<p class="mail-error">${esc(mailServiceError)}</p>` : ""}</div><div class="actions">${!demoMode && mailSession ? "<button data-mail-sync>Vérifier les réponses</button><button data-mail-connect>Renouveler la connexion</button><button data-mail-disconnect>Déconnecter et suspendre</button>" : "<button data-mail-connect " + (demoMode ? "disabled" : "") + ">Connecter Gmail</button>"}</div></div><div class="toolbar mail-filters">${Object.entries(
     counts,
   )
     .map(
@@ -200,6 +204,9 @@ function applyMailStatus(data) {
   if (mailSession && data.email !== mailSession.email)
     throw Error("Compte Gmail inattendu.");
   mailServiceError = data.error || "";
+  mailServiceMode = data.mode || "";
+  mailTestRecipients = data.testRecipients || [];
+  mailServiceLocal = data.localService === true;
   for (const status of data.jobs || []) {
     const d = (db.supplierDrafts || []).find((x) => x.id === status.id);
     if (d && (!d.mailAccount || d.mailAccount === data.email)) {
@@ -439,7 +446,7 @@ document.addEventListener("click", async (event) => {
       if (!rows.length || !mailSession || demoMode) return;
       modal(
         "Envoyer le lot depuis " + mailSession.email,
-        `<p>${rows.length} messages individuels seront transmis. Relances : ${rows.filter((r) => r.draft.reminderEnabled).length}, au maximum une par message.</p><ul>${rows.map((r) => `<li><strong>${esc(r.draft.supplierName)}</strong> · ${esc(r.draft.recipient)}<br>${esc(r.draft.subject)}</li>`).join("")}</ul><p>Les relances autorisées continueront avec le service hébergé, même après la fermeture du site. Vous pouvez les arrêter depuis ce tableau.</p><label class="mail-tick"><input type="checkbox" name="confirmSend" required> Je confirme l’envoi de ce lot et les relances cochées.</label>`,
+        `<p>${rows.length} messages individuels seront transmis. Relances : ${rows.filter((r) => r.draft.reminderEnabled).length}, au maximum une par message.</p><ul>${rows.map((r) => `<li><strong>${esc(r.draft.supplierName)}</strong> · ${esc(r.draft.recipient)}<br>${esc(r.draft.subject)}</li>`).join("")}</ul><p>${mailServiceLocal ? "Pour ces essais locaux, les relances nécessitent que le service reste lancé et que la connexion Atelier soit encore valide." : "Le suivi nécessite un service actif et les droits Atelier valides."} Vous pouvez arrêter les relances depuis ce tableau.</p><label class="mail-tick"><input type="checkbox" name="confirmSend" required> Je confirme l’envoi de ce lot et les relances cochées.</label>`,
         (data) => {
           if (!data.confirmSend) throw Error("Confirmez le lot.");
           void sendMailBatch(rows.map((r) => r.draft));
@@ -478,7 +485,7 @@ window.addEventListener("message", async (event) => {
     event.data.nonce !== mailNonce
   )
     return;
-  mailSession = { token: event.data.token, email: event.data.email };
+  mailSession = { token: event.data.token, email: event.data.email, cloudUserId:event.data.cloudUserId };
   sessionStorage.setItem("atelier-mail-session", JSON.stringify(mailSession));
   mailNonce = "";
   try {

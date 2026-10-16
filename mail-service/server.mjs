@@ -9,8 +9,10 @@ import {
 import { readFileSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { addJobs, processAccount } from "./core.mjs";
+import { createCloudMailAuth } from "./cloud-auth.mjs";
 import { mailRecipientGuard, guardMailTransport } from "./safety.mjs";
 const env = process.env;
+const assertAccount=mailRecipientGuard(env.MAIL_MODE || "sandbox",env.MAIL_TEST_ACCOUNTS || "");
 const assertRecipient=mailRecipientGuard(env.MAIL_MODE || "sandbox",env.MAIL_TEST_RECIPIENTS || "");
 for (const key of [
   "GOOGLE_CLIENT_ID",
@@ -23,6 +25,10 @@ for (const key of [
   if (!env[key]) throw Error("Configuration manquante : " + key);
 const publicURL = new URL(env.MAIL_PUBLIC_URL);
 const allowedOrigin = new URL(env.MAIL_ALLOWED_ORIGIN).origin;
+const requireCloud=env.MAIL_REQUIRE_CLOUD !== "0";
+if(!requireCloud && !["127.0.0.1","localhost"].includes(publicURL.hostname))throw Error("Le service hébergé exige la connexion Atelier.");
+if(requireCloud && (!env.ATELIER_SUPABASE_URL || !env.ATELIER_SUPABASE_KEY))throw Error("Configuration publique Supabase requise.");
+const cloudAuth=requireCloud?createCloudMailAuth(env.ATELIER_SUPABASE_URL,env.ATELIER_SUPABASE_KEY):null;
 if (
   publicURL.protocol !== "https:" &&
   !["localhost", "127.0.0.1"].includes(publicURL.hostname)
@@ -135,6 +141,7 @@ async function tick() {
         await processAccount(
           account,
           guardMailTransport({
+            ...(requireCloud?{authorize:job=>cloudAuth.project(account.cloudContext||{},job)}:{}),
             send: (body) =>
               gmail(token.access_token, "messages/send", {
                 method: "POST",
@@ -163,6 +170,9 @@ async function tick() {
 function summary(account) {
   return {
     email: account.email,
+    mode: env.MAIL_MODE || "sandbox",
+    testRecipients:(env.MAIL_MODE||"sandbox")==="sandbox"?(env.MAIL_TEST_RECIPIENTS||"").split(",").map(x=>x.trim()).filter(Boolean):[],
+    localService: ["127.0.0.1","localhost"].includes(publicURL.hostname),
     error: account.connectionError || "",
     jobs: (account.jobs || []).map(
       ({
@@ -221,7 +231,7 @@ const server = http.createServer(async (req, res) => {
     res.setHeader("Vary", "Origin");
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Authorization, Content-Type",
+      "Authorization, Content-Type, X-Atelier-Token, X-Atelier-Studio",
     );
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   }
@@ -241,6 +251,7 @@ const server = http.createServer(async (req, res) => {
       pending.delete(url.searchParams.get("state"));
       if (!state || state.expires < Date.now() || !url.searchParams.get("code"))
         throw Error("Connexion annulée ou expirée.");
+      if(requireCloud)await cloudAuth.owner(state.cloudContext?.token,state.cloudContext?.studioId);
       const token = await oauth({
         grant_type: "authorization_code",
         code: url.searchParams.get("code"),
@@ -251,7 +262,12 @@ const server = http.createServer(async (req, res) => {
         throw Error("Autorisations Gmail incomplètes.");
       const profile = await gmail(token.access_token, "profile");
       const email = profile.emailAddress.toLowerCase();
+      assertAccount(email);
       const account = (store.accounts[email] ??= { email, jobs: [] });
+      if(requireCloud){
+        if(account.cloudContext && account.cloudContext.userId!==state.cloudContext.userId)throw Error("Ce Gmail est lié à un autre compte Atelier.");
+        account.cloudContext=state.cloudContext;
+      }
       account.refreshToken = token.refresh_token || account.refreshToken;
       if (!account.refreshToken)
         throw Error("Autorisation hors ligne manquante.");
@@ -260,6 +276,7 @@ const server = http.createServer(async (req, res) => {
       const session = randomBytes(32).toString("base64url");
       store.sessions[hash(session)] = {
         email,
+        cloudUserId:state.cloudContext?.userId,
         expires: Date.now() + 12 * 3600000,
       };
       persist();
@@ -268,6 +285,7 @@ const server = http.createServer(async (req, res) => {
         type: "atelier-gmail-connected",
         nonce: state.nonce,
         token: session,
+        cloudUserId:state.cloudContext?.userId,
         email,
       }).replace(/</g, "\\u003c");
       res.writeHead(200, {
@@ -284,6 +302,7 @@ const server = http.createServer(async (req, res) => {
       reply(res, 403, { error: "Origine non autorisée." });
       return;
     }
+    const cloudContext=requireCloud?await cloudAuth.owner(req.headers["x-atelier-token"],req.headers["x-atelier-studio"]):null;
     if (url.pathname === "/api/mail/connect" && req.method === "POST") {
       const ip = req.socket.remoteAddress;
       const rate = rates.get(ip) || { start: Date.now(), count: 0 };
@@ -302,6 +321,7 @@ const server = http.createServer(async (req, res) => {
       const state = randomBytes(32).toString("base64url"),
         verifier = randomBytes(32).toString("base64url");
       pending.set(state, {
+        cloudContext,
         nonce: input.nonce,
         verifier,
         expires: Date.now() + 600000,
@@ -334,18 +354,27 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     const account = store.accounts[session.email];
+    if(requireCloud){
+      if(session.cloudUserId!==cloudContext.userId||account.cloudContext?.userId!==cloudContext.userId)throw Error("Cette session Gmail appartient à un autre compte Atelier.");
+      account.cloudContext=cloudContext;
+      persist();
+    }
+    const visibleSummary=()=>{const data=summary(account);if(requireCloud)data.jobs=data.jobs.filter(j=>account.jobs.find(x=>x.id===j.id)?.studioId===cloudContext.studioId);return data;};
     if (url.pathname === "/api/mail/status" && req.method === "GET") {
-      reply(res, 200, summary(account));
+      reply(res, 200, visibleSummary());
       return;
     }
     if (url.pathname === "/api/mail/send" && req.method === "POST") {
       const input = await body(req);
       if (input.confirmed !== true) throw Error("Validation du lot requise.");
       if(!Array.isArray(input.messages))throw Error("Liste de messages requise.");
-      input.messages.forEach(message=>assertRecipient(message.recipient));
+      input.messages.forEach(message=>{assertRecipient(message.recipient);if((env.MAIL_MODE||"sandbox")==="sandbox"&&!message.subject?.startsWith('[TEST ATELIER] '))throw Error('Objet de test requis : [TEST ATELIER].');});
+      if(requireCloud)for(const message of input.messages)await cloudAuth.project(cloudContext,message);
+      if(requireCloud)for(const message of input.messages){const previous=(account.jobs||[]).find(j=>j.id===message.id);if(previous&&previous.studioId!==cloudContext.studioId)throw Error("Identifiant de demande déjà utilisé dans un autre studio.");}
       addJobs(account, input.messages);
+      if(requireCloud)for(const message of input.messages)account.jobs.find(j=>j.id===message.id).studioId=cloudContext.studioId;
       persist();
-      reply(res, 202, summary(account));
+      reply(res, 202, visibleSummary());
       void tick();
       return;
     }
@@ -368,12 +397,12 @@ const server = http.createServer(async (req, res) => {
             job.state = "Annulé avant envoi";
         }
       persist();
-      reply(res, 200, summary(account));
+      reply(res, 200, visibleSummary());
       return;
     }
     if (url.pathname === "/api/mail/check" && req.method === "POST") {
       void tick();
-      reply(res, 202, summary(account));
+      reply(res, 202, visibleSummary());
       return;
     }
     if (url.pathname === "/api/mail/disconnect" && req.method === "POST") {
@@ -394,7 +423,7 @@ const server = http.createServer(async (req, res) => {
     });
   }
 });
-server.listen(Number(env.PORT || 8787), "0.0.0.0", () =>
+server.listen(Number(env.PORT || 8787), env.MAIL_BIND_HOST || (["localhost","127.0.0.1"].includes(publicURL.hostname) ? "127.0.0.1" : "0.0.0.0"), () =>
   console.log("Service Atelier prêt."),
 );
 setInterval(() => void tick(), 60000).unref();

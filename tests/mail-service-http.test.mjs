@@ -11,6 +11,7 @@ const processHandle = spawn(process.execPath, ["mail-service/server.mjs"], {
   env: {
     ...process.env,
     PORT: String(port),
+    MAIL_REQUIRE_CLOUD: "0",
     GOOGLE_CLIENT_ID: "test-client",
     GOOGLE_CLIENT_SECRET: "test-only-not-a-credential",
     MAIL_PUBLIC_URL: base,
