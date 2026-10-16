@@ -85,3 +85,11 @@ Tests : classement marque/fournisseur/reste du carnet, même structure sans doub
 ## Version 0.16.5 — saisie sans zéro initial
 
 Prix, cautions, enveloppes, frais et tarifs du devis : un montant nul s’efface à l’entrée dans le champ, prêt pour la saisie. Si aucun chiffre n’est saisi, le zéro revient à la sortie. Les montants non nuls ne sont pas effacés. Aucun événement de sauvegarde n’est déclenché par le simple focus.
+
+## Version 0.16.6 — créer le contact depuis la pièce
+
+Le bouton Ajouter un contact ouvre une fiche courte dans le formulaire courant, sans remplacer la pièce. Marque et fournisseur sont repris des champs principaux et restent synchronisés pendant la saisie ; le nom/service et l’e-mail sont les seuls champs à compléter. Les commandes de recherche et de sélection ne sont pas affichées quand le carnet est vide.
+
+La validation de la pièce crée ou retrouve le contact privé (e-mail et mêmes structures), associe brandId et supplierId, puis sélectionne ce contact sur la pièce. Les suggestions reconnaissent ses deux rattachements. Aucun contact ni structure n’est conservé si la validation du callback échoue ; annuler la fiche n’effectue aucune écriture. Les champs temporaires ne restent pas sur la pièce. Aucun envoi Gmail.
+
+Vérifications : parcours de sauvegarde, double rattachement, e-mail normalisé et retour arrière après échec, suite complète. Navigateur : carnet vide, ouverture inline, nom/e-mail conservés pendant le changement de marque et contexte mis à jour. Page de vérification avec données de démonstration, supprimée après vérification ; aucun projet privé modifié.

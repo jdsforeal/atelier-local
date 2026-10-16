@@ -15,7 +15,7 @@ function relatedContacts(database, supplier) {
   if (!supplier) return [];
   return database.contacts.filter(
     (c) =>
-      c.supplierId === supplier.id ||
+      c.supplierId === supplier.id || c.brandId === supplier.id ||
       (!c.supplierId && supplierKey(c.brand) === supplierKey(supplier.name)),
   );
 }

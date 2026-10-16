@@ -44,7 +44,7 @@ function cloudProjectDocuments(database, project) {
     selectionHistory: forProject("selectionHistory"),
     clientBoards: boards,
     contacts: (database.contacts || []).filter(
-      (c) => contactIds.has(c.id) || supplierIds.has(c.supplierId),
+      (c) => contactIds.has(c.id) || supplierIds.has(c.supplierId) || supplierIds.has(c.brandId),
     ),
     suppliers: (database.suppliers || []).filter((s) => supplierIds.has(s.id)),
   };
