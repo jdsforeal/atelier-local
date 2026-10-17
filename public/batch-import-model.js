@@ -1,5 +1,5 @@
 /** Brouillons d’import : aucune écriture avant la vérification explicite de la sélection. */
-const batchProductRegistry=typeof module!=='undefined'?require('./product-import-model.js'):{PRODUCT_SHOPS,productPublicURL};
+const batchProductRegistry=typeof module!=='undefined'?require('./product-import-model.js'):{PRODUCT_SHOPS,productPublicURL,productTaxEvidence};
 const BATCH_CATEGORIES=['Haut','Bas','Robe','Combinaison','Veste','Chaussures','Bijoux','Sac','Accessoire','Autre'];
 function batchCategory(name){
  const text=String(name||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
@@ -28,13 +28,14 @@ function batchOCRProposal(text, confidence=0, context={}){
  const shop=batchProductRegistry.PRODUCT_SHOPS.find(shop=>shop.hosts.some(host=>String(text).toLowerCase().includes(host)));
  let brand=context.brand||(shop?.ownBrand?shop.name:''),supplier=context.supplier||shop?.name||'';
  const prefix=name.match(/^(.{2,35}?)\s+[-–|]\s+(.+)/);if(!brand&&prefix&&(!batchCategory(prefix[1])||/[&.]/.test(prefix[1]))&&batchCategory(prefix[2]))brand=prefix[1];
- return {name,brand,supplier,category:batchCategory(name),price:prices.length===1?prices[0]:null,currency:prices.length?'EUR':'',priceCandidates:prices,description:'',url:context.url||'',images:[],source:'capture',confidence,notice:prices.length>1?'Plusieurs prix lus : choisissez le prix de cette pièce.':'Texte lu dans la capture originale. Vérifiez chaque proposition.'};
+ return {taxEvidence:batchProductRegistry.productTaxEvidence(text),name,brand,supplier,category:batchCategory(name),price:prices.length===1?prices[0]:null,currency:prices.length?'EUR':'',priceCandidates:prices,description:'',url:context.url||'',images:[],source:'capture',confidence,notice:prices.length>1?'Plusieurs prix lus : choisissez le prix de cette pièce.':'Texte lu dans la capture originale. Vérifiez chaque proposition.'};
 }
 function batchCombine(link, capture){
  const name=link?.source!=='url'&&link?.name?link.name:capture?.name||link?.name||'';
  const price=link?.currency==='EUR'&&link.price!==null?link.price:capture?.price??null;
  const choose=(key)=>link?.[key]||capture?.[key]||'';
- return {name,brand:choose('brand'),supplier:choose('supplier'),category:batchCategory(name),price,description:choose('description'),url:choose('url'),images:link?.images||[],priceCandidates:capture?.priceCandidates||[],sources:{name:link?.source!=='url'&&link?.name?'Lien':capture?.name?'Capture':'Lien à vérifier',price:link?.price!==null&&link?.currency==='EUR'?'Lien':'Capture à vérifier'},notice:[link?.notice,capture?.notice].filter(Boolean).join(' ')};
+ const evidence=[link?.taxEvidence,capture?.taxEvidence].filter(Boolean),bases=[...new Set(evidence.map(e=>e.basis).filter(b=>b!=='unknown'))],rates=[...new Set(evidence.map(e=>e.rate).filter(r=>r!==null))];
+ return {taxEvidence:{basis:bases.length===1?bases[0]:'unknown',rate:rates.length===1?rates[0]:null,confirmed:false,excerpt:evidence.map(e=>e.excerpt).filter(Boolean).join(' · '),conflict:bases.length>1||rates.length>1||evidence.some(e=>e.conflict||e.reverse)},name,brand:choose('brand'),supplier:choose('supplier'),category:batchCategory(name),price,description:choose('description'),url:choose('url'),images:link?.images||[],priceCandidates:capture?.priceCandidates||[],sources:{name:link?.source!=='url'&&link?.name?'Lien':capture?.name?'Capture':'Lien à vérifier',price:link?.price!==null&&link?.currency==='EUR'?'Lien':'Capture à vérifier'},notice:[link?.notice,capture?.notice].filter(Boolean).join(' ')};
 }
 function batchBuild(database, drafts, options){
  const {projectId,lookId,variantId,uid,resolveNeed,canEdit,canFinance,directory=[]}=options;

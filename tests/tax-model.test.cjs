@@ -17,3 +17,25 @@ const f=projectFinancials(db,{id:'p',budget:500});assert.equal(f.forecast,220);a
 db.pieces[0].purchaseTax.confirmed=false;assert.equal(projectFinancials(db,{id:'p',budget:500}).taxPending,1);
 const cloud=require('../public/cloud-model.js');const docs=cloud.cloudProjectDocuments({...db,projects:[],contacts:[],suppliers:[],quotes:[],requests:[]},{id:'p',looks:[]});assert(!JSON.stringify(docs.creative).includes('purchaseTax'));assert.equal(docs.finance.pieces[0].purchaseTax.rate,21);const globals=cloud.cloudGlobalDocument({studioTaxProfile:{country:'FR'}});assert.equal(globals.studioTaxProfile.country,'FR');
 console.log('TVA : Belgique/France, TVAC/HTVA, non-récupération, taux inconnu/0 %, coût et trésorerie séparés, confidentialité cloud vérifiés.');
+
+const {productTaxEvidence:e,parseProductHTML}=require('../public/product-import-model.js');
+const {batchOCRProposal,batchCombine}=require('../public/batch-import-model.js');
+assert.equal(e('Prix 121 € TVAC — TVA 21 %').basis,'TTC');
+assert.equal(e('Prix 121 € TVAC — TVA 21 %').rate,21);
+assert.equal(e('Prix 100 € hors taxes').basis,'HT');
+assert.equal(e('Prix 121 € — réduction 21 %').rate,null);
+assert.equal(e('Prix 121 €').basis,'unknown');
+assert.equal(e('Prix TTC TVA 20 % ou TVA 21 %').rate,null);
+assert.equal(e('TVAC et prix HT').conflict,true);
+assert.equal(e('Autoliquidation TVA 0 %').rate,null);
+assert.equal(e('',{valueAddedTaxIncluded:false}).basis,'HT');
+const html='<script type="application/ld+json">'+JSON.stringify({'@type':'Product',name:'Chemise',offers:{price:121,priceCurrency:'EUR',priceSpecification:{valueAddedTaxIncluded:true}}})+'</script><p>121 € TVAC TVA 21 %</p><footer>TVA 20 %</footer>';
+const parsed=parseProductHTML(html,'https://example.com/products/chemise');
+assert.equal(parsed.taxEvidence.rate,21);assert.equal(parsed.taxEvidence.basis,'TTC');assert.equal(parsed.taxEvidence.confirmed,false);
+assert.equal(batchOCRProposal('Chemise\n121 € TVAC\nTVA 21 %').taxEvidence.rate,21);
+assert.equal(batchCombine({taxEvidence:e('TVAC TVA 21 %')},{taxEvidence:e('HTVA TVA 20 %')}).taxEvidence.conflict,true);
+assert.equal(a(121,{basis:'TTC',rate:21,recovery:'foreign',confirmed:true}).budget,121);
+assert.equal(a(121,{basis:'TTC',rate:21,recovery:'foreign',confirmed:true}).pending,true);
+console.log('Lecture TVA : HTML courant, JSON-LD, OCR, conflits, réduction, autoliquidation, confirmation et TVA étrangère vérifiés.');
+
+assert.equal(e('100 € HT · 21 % TVA').basis,'HT');assert.equal(e('100 € HT · 21 % TVA').rate,21);

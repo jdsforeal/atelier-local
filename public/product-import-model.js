@@ -5,6 +5,24 @@ function productPublicURL(value) {
 function productText(value) {
   return String(value??'').replace(/<[^>]*>/g,' ').replace(/&#x([\da-f]+);/gi,(_,n)=>{const cp=parseInt(n,16);return cp<=0x10ffff?String.fromCodePoint(cp):'';}).replace(/&#(\d+);/g,(_,n)=>Number(n)<=0x10ffff?String.fromCodePoint(Number(n)):'').replace(/&(amp|quot|apos|lt|gt|nbsp);/g,(_,n)=>({amp:'&',quot:'"',apos:"'",lt:'<',gt:'>',nbsp:' '})[n]).replace(/\s+/g,' ').trim().slice(0,2000);
 }
+/** Seules les mentions explicites sont proposées ; jamais un taux déduit du domaine. */
+function productTaxEvidence(text, specification={}) {
+ const clean=productText(String(text).slice(0,30000)),normal=clean.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+ const ht=/\b(?:htva|ht|hors taxes|hors tva|excl(?:uding)?\.?\s*(?:vat|tax)|prix\s+ht)\b/.test(normal);
+ const ttc=/\b(?:tvac|ttc|tva (?:comprise|incluse)|(?:incl(?:uding)?\.?\s*(?:vat|tax))|taxes comprises)\b/.test(normal);
+ const included=specification?.valueAddedTaxIncluded;
+ const structured=typeof included==='boolean'?(included?'TTC':'HT'):'unknown';
+ const visible=ht===ttc?'unknown':ht?'HT':'TTC';
+ const basis=structured!=='unknown'&&visible!=='unknown'&&structured!==visible?'unknown':structured!=='unknown'?structured:visible;
+ const rates=[...normal.matchAll(/\b(?:tva|vat|btw)\s*(?:de|a|at|:)?\s*(\d{1,2}(?:[.,]\d+)?)\s*%/g)].map(m=>Number(m[1].replace(',','.')));
+ for(const m of normal.matchAll(/\b(\d{1,2}(?:[.,]\d+)?)\s*%\s*(?:de\s+)?(?:tva|vat|btw)\b/g))rates.push(Number(m[1].replace(',','.')));
+ const unique=[...new Set(rates)];const rate=unique.length===1?unique[0]:null;
+ const reverse=/autoliquidation|reverse charge/.test(normal);
+ return {basis:reverse?'unknown':basis,rate:reverse?null:rate,confirmed:false,excerpt:(ht||ttc||unique.length||reverse)?clean.slice(0,500):'',reverse,conflict:(ht&&ttc)||unique.length>1||(structured!=='unknown'&&visible!=='unknown'&&structured!==visible)};
+}
+function productTaxVisibleText(html){
+ return String(html).replace(/<(script|style|header|footer|nav|aside)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,' ').split(/<\/(?:p|div|li|span)>|<br\s*\/?\s*>/i).map(productText).filter(t=>t.length<350&&!/livraison|shipping|frais de port|delivery/i.test(t)&&/\b(?:htva|ht|tvac|ttc|tva|vat|hors taxes|taxes comprises|autoliquidation|reverse charge)\b/i.test(t)).slice(0,6).join(' ');
+}
 const PRODUCT_SHOPS = [
   {hosts:['ghbass-eu.com','www.ghbass-eu.com'], name:'G.H.BASS', ownBrand:true},
   {hosts:['lottusse.com','www.lottusse.com'], name:'Lottusse', ownBrand:true},
@@ -153,6 +171,7 @@ function parseProductHTML(html,url) {
   if(product||cleanName||result.images.length){result.source=product?'product-data':'page';result.notice='Informations publiées par la boutique. Vérifiez la variante, le prix et le fournisseur avant enregistrement.';}
   if(result.source==='url')result.reason='no-product-data';
   else if(!result.name||!result.images.length||result.price===null){result.reason='partial';result.notice='Lecture partielle : certaines informations ne sont pas publiées ou accessibles. Complétez les champs manquants et vérifiez la variante.';}
+  result.taxEvidence=productTaxEvidence(productTaxVisibleText(html),offer?.priceSpecification);
   return result;
 }
-if(typeof module!=='undefined')module.exports={PRODUCT_SHOPS,productShop,productPublicURL,productText,productFromURL,parseProductHTML};
+if(typeof module!=='undefined')module.exports={productTaxEvidence,productTaxVisibleText,PRODUCT_SHOPS,productShop,productPublicURL,productText,productFromURL,parseProductHTML};
