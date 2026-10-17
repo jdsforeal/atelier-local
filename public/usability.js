@@ -24,7 +24,7 @@ function projectSettings(id, photoOnly = false) {
   if (!p || !canEditProject(id)) return toast('Vous ne pouvez pas modifier ce projet.');
   modal(photoOnly ? 'Image du projet' : 'Modifier le projet',
     `${p.cover ? `<img class="project-cover-preview" src="${esc(p.cover)}" alt="Image actuelle du projet">` : '<p>Ajoutez une image pour reconnaître ce projet en un coup d’œil.</p>'}` +
-    (photoOnly ? '' : field('name', 'Nom du projet', 'text', p.name) + field('client', 'Client / artiste', 'text', p.client || '') + field('type', 'Type de projet', 'select', p.type, ['Clip','Éditorial','Tournée','Événement','Collection','Autre'].map(x=>[x,x])) + field('season', 'Saison', 'select', p.season || 'Toute saison', ['Printemps','Été','Automne','Hiver','Toute saison'].map(x=>[x,x]))) +
+    (photoOnly ? '' : field('name', 'Nom du projet', 'text', p.name) + field('client', 'Client / artiste', 'text', p.client || '') + field('date', 'Date principale', 'date', p.date || '') + field('type', 'Type de projet', 'select', p.type, ['Clip','Éditorial','Tournée','Événement','Collection','Autre'].map(x=>[x,x])) + field('season', 'Saison', 'select', p.season || 'Toute saison', ['Printemps','Été','Automne','Hiver','Toute saison'].map(x=>[x,x]))) +
     field('coverFile', p.cover ? 'Remplacer l’image' : 'Choisir une image', 'file') +
     (p.cover ? '<label class="cloud-right"><input type="checkbox" name="removeCover"> Retirer l’image actuelle</label>' : '') +
     '<p class="note">JPEG, PNG ou WebP. Cette image identifie le projet ; elle ne remplace pas son moodboard.</p>',
@@ -41,6 +41,8 @@ function projectSettings(id, photoOnly = false) {
       } else if (form.elements.removeCover?.checked) cover = '';
       if (!photoOnly) {
         if (!data.name.trim()) throw Error('Donnez un nom au projet.');
+        if (!data.date) p.date = '';
+        else if (data.date !== (p.date || '')) flowMoveDates(db, p, data.date, false);
         Object.assign(p, {name:data.name.trim(), client:data.client, type:data.type, season:data.season});
       }
       p.cover = cover;

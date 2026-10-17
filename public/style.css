@@ -1969,3 +1969,16 @@ body.atelier-auth-pending > aside,body.atelier-auth-pending > main {visibility:h
 @media(max-width:680px){.batch-import-dialog{padding:16px}.batch-review-grid{grid-template-columns:1fr}.batch-review{padding:14px}.batch-footer{bottom:-16px;flex-wrap:wrap}.batch-footer button{flex:1}.batch-sources{grid-template-columns:1fr}.batch-import-dialog .section-head{gap:10px}.batch-photo-grid img{height:125px}}
 
 .product-import-capture{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:16px 0}.product-import-capture label{flex:1;min-width:220px}.product-import-capture input{display:block;max-width:100%;margin-top:8px}
+
+/* Une hiérarchie commune aux pages du projet. */
+.project-quick-actions{display:flex;justify-content:flex-end;gap:10px;margin:12px 0 24px}
+.overview-inspiration{align-self:start;min-width:0}
+.overview-mood-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;padding:0;border:0;background:transparent;overflow:hidden;border-radius:14px;min-height:160px}
+.overview-mood-preview img{width:100%;height:200px;object-fit:cover}
+.overview-mood-preview span{grid-column:1/-1;padding:48px 16px;background:#eef0e8;color:#53634b}
+.overview-brief,.selection-settings,.project-followup{margin:20px 0;border:1px solid #e1e4da;border-radius:14px;padding:16px 20px}
+.overview-brief summary,.selection-settings summary,.project-followup summary{cursor:pointer;color:#53634b;font-weight:600}
+.project-detail-cover[role=button]{cursor:pointer}
+.project-detail-cover[role=button]:focus-visible{outline:3px solid #53634b;outline-offset:4px}
+.project-followup .flow-actions{margin:16px 0 0;border:0;padding:0}
+@media(max-width:650px){.project-quick-actions{justify-content:flex-start;flex-wrap:wrap}.overview-mood-preview img{height:145px}}

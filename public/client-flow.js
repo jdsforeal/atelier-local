@@ -1,3 +1,11 @@
+function clientPresentationBoard(board, projectId) {
+  if (typeof demoMode !== 'undefined' && demoMode) return board;
+  if (typeof cloudRights === 'function' && cloudRights(projectId).budget_read) return board;
+  const safe = structuredClone(board);
+  safe.showPrices = false;
+  for (const look of safe.looks || []) for (const piece of look.pieces || []) delete piece.price;
+  return safe;
+}
 /** Atelier : planches de sélection versionnées et suivi en parallèle des fournisseurs. */
 let clientBoardVersion = "";
 function flowCurrentItems(p) {
@@ -12,7 +20,7 @@ function flowCurrentItems(p) {
 function clientBoardMarkup(p) {
   const versions = (db.clientBoards || []).filter((x) => x.project === p.id);
   const snapshot = versions.find((x) => x.id === clientBoardVersion);
-  const board = snapshot || flowSnapshot(db, p, p.clientBoardPrices === true);
+  const board = clientPresentationBoard(snapshot || flowSnapshot(db, p, p.clientBoardPrices === true), p.id);
   return `<section class="client-board-workspace"><div class="section-head"><div><div class="eyebrow">SÉLECTION CLIENT · LOOKS ET ALTERNATIVES</div><h2>${snapshot ? "Version conservée" : "Planche en préparation"}</h2><p>Composez pendant les demandes de disponibilité. Les décisions client sont enregistrées séparément des réservations.</p></div><div class="actions"><button data-flow-freeze ${!board.looks.some((l) => l.pieces.length) || snapshot ? "disabled" : ""}>Conserver une nouvelle version</button><button data-flow-pdf ${!board.looks.some((l) => l.pieces.length) ? "disabled" : ""}>Prévisualiser la sélection PDF</button><button data-tab="messages">Demandes fournisseurs</button></div></div>
   <div class="toolbar"><select id="client-board-version" aria-label="Version de la sélection client"><option value="">Préparation en direct</option>${versions
     .slice()
@@ -82,7 +90,7 @@ function flowActionsMarkup(p) {
           pieces: pieces.filter((x) => (d.pieces || []).includes(x.id)),
         }),
   );
-  return `<section class="panel flow-actions"><div class="section-head"><h2>À faire maintenant</h2><div class="actions"><button data-flow-dates>Déplacer les dates</button><button data-flow-board>Préparer la sélection client</button></div></div><p>${selected.length} pièces dans le scénario · ${unresolved.length} disponibilités à confirmer · ${incoming.length} acquisitions à confirmer · ${obligations.length} obligations à suivre.</p>${p.status === "Annulé" ? '<p class="finance-alert">Projet annulé : aucune nouvelle demande. Les coûts dus, les retours et les cautions restent à traiter. Les relances serveur ne sont arrêtées qu’après synchronisation avec Gmail.</p>' : ""}${clientChanged ? '<p class="finance-alert">La sélection a changé depuis la validation client. Vérifiez les remplacements et préparez une nouvelle proposition.</p>' : ""}${changed.length ? `<p class="finance-alert">${changed.length} demande(s) déjà envoyée(s) concernée(s) par des changements : préparez un complément ou une annulation ; le message envoyé reste conservé.</p>` : ""}<details><summary>Achats, locations et points à résoudre</summary>${incoming.map((x) => `<p>${esc(x.mode)} · ${esc(x.name)} · ${esc(flowAvailability(x, p))} · ${euro(x.price)} <button data-flow-piece="${esc(x.id)}">Suivi rapide</button></p>`).join("")}${obligations.map((x) => `<p>À solder · ${esc(x.name)} : ${x.commit && x.selection !== "Retenue" ? "engagement encore dû · " : ""}${["Prêt", "Location"].includes(x.mode) && x.status !== "Retourné" ? "retour à confirmer · " : ""}${x.caution && !x.cautionReturned ? "caution à récupérer" : ""} <button data-edit-piece="${esc(x.id)}">Détails</button></p>`).join("")}</details></section>`;
+  return `<section class="panel flow-actions"><div class="section-head"><h2>À faire maintenant</h2><div class="actions"><button data-flow-dates>Déplacer les dates</button><button data-flow-board>Préparer la sélection client</button></div></div><p>${selected.length} pièces dans le scénario · ${unresolved.length} disponibilités à confirmer · ${incoming.length} acquisitions à confirmer · ${obligations.length} obligations à suivre.</p>${p.status === "Annulé" ? '<p class="finance-alert">Projet annulé : aucune nouvelle demande. Les coûts dus, les retours et les cautions restent à traiter. Les relances serveur ne sont arrêtées qu’après synchronisation avec Gmail.</p>' : ""}${clientChanged ? '<p class="finance-alert">La sélection a changé depuis la validation client. Vérifiez les remplacements et préparez une nouvelle proposition.</p>' : ""}${changed.length ? `<p class="finance-alert">${changed.length} demande(s) déjà envoyée(s) concernée(s) par des changements : préparez un complément ou une annulation ; le message envoyé reste conservé.</p>` : ""}<details><summary>Achats, locations et points à résoudre</summary>${incoming.map((x) => `<p>${esc(x.mode)} · ${esc(x.name)} · ${esc(flowAvailability(x, p))} · ${demoMode || cloudRights(p.id).budget_read ? euro(x.price) : ""} <button data-flow-piece="${esc(x.id)}">Suivi rapide</button></p>`).join("")}${obligations.map((x) => `<p>À solder · ${esc(x.name)} : ${x.commit && x.selection !== "Retenue" ? "engagement encore dû · " : ""}${["Prêt", "Location"].includes(x.mode) && x.status !== "Retourné" ? "retour à confirmer · " : ""}${x.caution && !x.cautionReturned ? "caution à récupérer" : ""} <button data-edit-piece="${esc(x.id)}">Détails</button></p>`).join("")}</details></section>`;
 }
 const flowPreviousRender = render;
 render = function () {
@@ -313,7 +321,7 @@ document.addEventListener("click", async (event) => {
       const v =
         (db.clientBoards || []).find((x) => x.id === clientBoardVersion) ||
         flowSnapshot(db, p, p.clientBoardPrices === true);
-      await exportClientSelection(v);
+      await exportClientSelection(clientPresentationBoard(v, p.id));
       if (!clientBoardVersion) {
         v.project = p.id;
         v.status = "Prévisualisée";
