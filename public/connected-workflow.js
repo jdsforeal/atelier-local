@@ -40,20 +40,31 @@ function importInspirations() {
 async function drawMoodboardPages(p) {
   const perPage = p.boardLayout === "Grille" ? 6 : 5;
   const pages = [];
-  const load = (src) =>
-    new Promise((resolve, reject) => {
-      const image = new Image();
-      image.crossOrigin = "anonymous";
-      image.onload = () => resolve(image);
-      image.onerror = () =>
-        reject(
-          Error(
-            "Une image distante ne permet pas l’export. Téléchargez-la puis importez son fichier dans le moodboard.",
-          ),
-        );
-      image.src = src;
-    });
-  const images = await Promise.all(p.boards.map((b) => load(b.image)));
+  const warnings = [];
+  const load = (src) => new Promise((resolve) => {
+    if (!src) return resolve(null);
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.referrerPolicy = "no-referrer";
+    const timer = setTimeout(() => { image.onload = image.onerror = null; resolve(null); }, 10000);
+    image.onload = () => { clearTimeout(timer); resolve(image); };
+    image.onerror = () => { clearTimeout(timer); resolve(null); };
+    image.src = src;
+  });
+  const images = await Promise.all(p.boards.map(async (board, index) => {
+    let source = board.image;
+    // Renouvelle uniquement nos propres liens privés expirables, jamais une boutique bloquée.
+    const ref = typeof cloudAssetSources !== 'undefined' ? cloudAssetSources.get(source) : null;
+    if (ref && typeof cloudState !== 'undefined' && cloudState.active && cloudState.client) {
+      try {
+        const signed = await cloudState.client.storage.from('atelier-private').createSignedUrl(ref.slice(14), 3600);
+        if (!signed.error && signed.data?.signedUrl) source = signed.data.signedUrl;
+      } catch { /* Le reste de la planche reste consultable. */ }
+    }
+    const image = await load(source);
+    if (!image) warnings.push(`Visuel ${index + 1}${board.caption ? ' · ' + board.caption : ''}`);
+    return image;
+  }));
   const text = (ctx, value, x, y, width, lineHeight, maxLines) => {
     const words = String(value || "").split(/\s+/);
     let line = "",
@@ -116,6 +127,7 @@ async function drawMoodboardPages(p) {
         captionHeight = 78;
       ctx.fillStyle = "#fff";
       ctx.fillRect(box.x, box.y, box.w, box.h - captionHeight);
+      if (image) {
       const scale = Math.min(
         (box.w - 24) / image.width,
         (box.h - captionHeight - 24) / image.height,
@@ -127,6 +139,15 @@ async function drawMoodboardPages(p) {
         image.width * scale,
         image.height * scale,
       );
+      } else {
+        ctx.fillStyle = "#eef0e8";
+        ctx.fillRect(box.x + 12, box.y + 12, box.w - 24, box.h - captionHeight - 24);
+        ctx.fillStyle = "#59634e";
+        ctx.font = "22px Arial";
+        text(ctx, "Visuel indisponible — à remplacer", box.x + 28, box.y + 80, box.w - 56, 30, 2);
+        ctx.font = "18px Arial";
+        text(ctx, "Importez son fichier ou une capture depuis le moodboard.", box.x + 28, box.y + 155, box.w - 56, 26, 3);
+      }
       ctx.fillStyle = "#59634e";
       ctx.font = "18px Arial";
       ctx.fillText(
@@ -172,6 +193,7 @@ async function drawMoodboardPages(p) {
     }
     pages.push({ jpeg, width: canvas.width, height: canvas.height, links });
   }
+  pages.warnings = warnings;
   return pages;
 }
 async function exportMoodboard() {

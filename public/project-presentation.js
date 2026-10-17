@@ -4,6 +4,11 @@ async function mountOverviewMoodboard(host, p) {
     const pages = await drawMoodboardPages(structuredClone(p));
     if (!host.isConnected) return;
     host.replaceChildren();
+    if (pages.warnings?.length) {
+      const warning = document.createElement('p'); warning.className='note';
+      warning.textContent=`${pages.warnings.length} visuel(s) à remplacer : ${pages.warnings.join(' ; ')}. La planche reste disponible ; les emplacements manquants sont signalés.`;
+      host.append(warning);
+    }
     pages.forEach((page, index) => {
       const button = document.createElement('button');
       button.className = 'overview-pdf-page';

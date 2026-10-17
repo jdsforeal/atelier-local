@@ -13,6 +13,11 @@ function previewDocument(
   dialog.setAttribute("aria-labelledby", "document-preview-title");
   dialog.innerHTML = `<div class="document-preview-head"><div><h2 id="document-preview-title">${esc(title)}</h2><small>${pages.length} page(s) · Le téléchargement reprend exactement cet aperçu.</small></div><button data-preview-close aria-label="Fermer la prévisualisation">✕</button></div><div class="document-preview-controls"><button data-preview-prev aria-label="Page précédente">←</button><span id="document-preview-count" aria-live="polite"></span><button data-preview-next aria-label="Page suivante">→</button><label>Affichage<select id="document-preview-zoom"><option value="fit">Page entière</option><option value="width">Pleine largeur</option></select></label><button class="primary" data-preview-download>Télécharger le PDF</button></div><div class="document-preview-sheet" tabindex="0" aria-label="Pages du document à faire défiler"></div>`;
   document.body.append(dialog);
+  if (pages.warnings?.length) {
+    const warning = document.createElement('p'); warning.className = 'finance-alert'; warning.setAttribute('role','status');
+    warning.textContent = `${pages.warnings.length} visuel(s) indisponible(s), signalé(s) sur la planche : ${pages.warnings.join(' ; ')}. Le PDF conserve ces emplacements. Importez leurs fichiers ou captures pour une version complète.`;
+    dialog.querySelector('.document-preview-controls').after(warning);
+  }
   let page = 0;
   const blob = moodboardPdf(pages),
     url = URL.createObjectURL(blob);
