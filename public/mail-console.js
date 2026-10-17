@@ -4,6 +4,7 @@ let mailFilter = "Tout",
   mailServiceMode = "",
   mailTestRecipients = [],
   mailServiceLocal = false,
+  mailSchedulingSupported = false,
   mailBusy = false,
   mailSession = null,
   mailPopup = null,
@@ -82,7 +83,7 @@ function mailCanEdit(p, d) {
   );
 }
 function mailStatus(d) {
-  return d.orphan ? "Pièces à vérifier" : mailDisplayState(d);
+  return d.deliveryState === "En attente d’envoi" && d.scheduledAt && !d.paused ? "Programmé · " + mailTime(d.scheduledAt) : d.orphan ? "Pièces à vérifier" : mailDisplayState(d);
 }
 function mailTime(s) {
   return s
@@ -113,7 +114,7 @@ function mailRowHTML(p, { group: g, draft: d }) {
   if(mailServiceMode === "sandbox")options=mailTestRecipients.map(email=>({email,name:"Adresse de test autorisée"}));
   if (d.recipient && !options.some((c) => c.email === d.recipient))
     options.push({ email: d.recipient, name: d.recipient });
-  return `<article class="mail-row ${d.state === "Validé" && !d.stale ? "mail-approved" : ""}" data-mail-row="${esc(d.id)}"><div class="mail-row-head"><label class="mail-tick"><input type="checkbox" data-mail-select="${esc(d.id)}" ${mailSelection.has(d.id) ? "checked" : ""} ${locked || g?.key === "unassigned" ? "disabled" : ""}><strong>${esc(d.supplierName)}</strong></label><span class="mail-state">${esc(status)}</span></div><div class="mail-row-grid"><div><label>Destinataire<select data-mail-field="recipient" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}><option value="">Choisir un contact lié</option>${options.map((c) => `<option value="${esc(c.email)}" ${c.email === d.recipient ? "selected" : ""}>${esc(c.name)} · ${esc(c.email)}</option>`).join("")}</select></label><p class="mail-pieces">${g ? `${g.pieces.length} pièce(s) · ${[...new Set(g.pieces.map((x) => x.name))].map(esc).join(" · ")}` : `${(d.pieces || []).length} pièce(s) dans la demande enregistrée`}</p>${!options.length && !mailIsSent(d) ? `<p class="note">Ajoutez une adresse au contact lié.</p>${g?.supplier ? `<button data-add-supplier-contact="${esc(g.supplier.id)}">Ajouter un contact</button>` : ""}` : ""}</div><div><strong>${esc(d.subject)}</strong><p class="mail-excerpt">${esc(d.body?.replace(/\n+/g, " ").slice(0, 180) || "Message à compléter")}</p>${d.sentAt ? `<small>Envoyé le ${mailTime(d.sentAt)} · vérifié ${mailTime(d.lastCheckedAt)}</small>` : ""}${d.error ? `<p class="mail-error">${esc(d.error)}</p>` : ""}</div><div class="mail-row-actions">${!mailIsSent(d) ? `<label class="mail-tick"><input type="checkbox" data-mail-approve="${esc(d.id)}" ${d.state === "Validé" && !d.stale ? "checked" : ""} ${locked || g?.key === "unassigned" ? "disabled" : ""}> Message relu et validé</label>${error ? `<small>${esc(error)}</small>` : ""}<label class="mail-tick"><input type="checkbox" data-mail-field="reminderEnabled" data-mail-id="${esc(d.id)}" ${d.reminderEnabled ? "checked" : ""} ${locked ? "disabled" : ""}> Relancer si aucune réponse</label><label>Délai<select data-mail-field="reminderDays" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}>${[2, 3, 5, 7, 14].map((n) => `<option value="${n}" ${Number(d.reminderDays || 3) === n ? "selected" : ""}>Après ${n} jours</option>`).join("")}</select></label>` : `<p>${d.reminderCount ? "Relance envoyée le " + mailTime(d.reminderSentAt) : d.reminderEnabled && !d.paused ? "Relance prévue le " + mailTime(d.nextReminderAt) : "Relance arrêtée / non activée"}</p>${d.reminderEnabled && !d.paused ? `<button data-mail-pause="${esc(d.id)}" ${!mailSession || mailBusy ? "disabled" : ""}>Arrêter la relance</button>` : ""}${d.threadId ? `<a href="https://mail.google.com/mail/u/${encodeURIComponent(d.mailAccount || mailSession?.email || "0")}/#all/${encodeURIComponent(d.threadId)}" target="_blank" rel="noopener">Voir la conversation ↗</a>` : ""}`}</div></div><details class="mail-editor"><summary>${mailIsSent(d) ? "Voir le message envoyé et le journal" : "Lire et modifier le message et sa relance"}</summary><label>Objet<input value="${esc(d.subject)}" data-mail-field="subject" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}></label><label>Message<textarea rows="10" data-mail-field="body" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}>${esc(d.body)}</textarea></label><label>Relance · envoyée au maximum une fois<textarea rows="5" data-mail-field="reminderBody" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}>${esc(d.reminderBody || "")}</textarea></label>${d.history ? `<ul>${d.history.map((h) => `<li>${mailTime(h.at)} · ${esc(h.event)}</li>`).join("")}</ul>` : ""}</details></article>`;
+  return `<article class="mail-row ${d.state === "Validé" && !d.stale ? "mail-approved" : ""}" data-mail-row="${esc(d.id)}"><div class="mail-row-head"><label class="mail-tick"><input type="checkbox" data-mail-select="${esc(d.id)}" ${mailSelection.has(d.id) ? "checked" : ""} ${locked || g?.key === "unassigned" ? "disabled" : ""}><strong>${esc(d.supplierName)}</strong></label><span class="mail-state">${esc(status)}</span></div><div class="mail-row-grid"><div><label>Destinataire<select data-mail-field="recipient" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}><option value="">Choisir un contact lié</option>${options.map((c) => `<option value="${esc(c.email)}" ${c.email === d.recipient ? "selected" : ""}>${esc(c.name)} · ${esc(c.email)}</option>`).join("")}</select></label><p class="mail-pieces">${g ? `${g.pieces.length} pièce(s) · ${[...new Set(g.pieces.map((x) => x.name))].map(esc).join(" · ")}` : `${(d.pieces || []).length} pièce(s) dans la demande enregistrée`}</p>${!options.length && !mailIsSent(d) ? `<p class="note">Ajoutez une adresse au contact lié.</p>${g?.supplier ? `<button data-add-supplier-contact="${esc(g.supplier.id)}">Ajouter un contact</button>` : ""}` : ""}</div><div><strong>${esc(d.subject)}</strong><p class="mail-excerpt">${esc(d.body?.replace(/\n+/g, " ").slice(0, 180) || "Message à compléter")}</p>${d.deliveryState === "En attente d’envoi" && d.scheduledAt && !d.paused ? `<p>Envoi programmé le ${esc(mailTime(d.scheduledAt))} · ${esc(Intl.DateTimeFormat().resolvedOptions().timeZone)}</p><button data-mail-reschedule="${esc(d.id)}">Modifier la date</button><button data-mail-cancel-scheduled="${esc(d.id)}">Annuler l’envoi programmé</button>` : ""}${d.sentAt ? `<small>Envoyé le ${mailTime(d.sentAt)} · vérifié ${mailTime(d.lastCheckedAt)}</small>` : ""}${d.error ? `<p class="mail-error">${esc(d.error)}</p>` : ""}</div><div class="mail-row-actions">${!mailIsSent(d) ? `<label class="mail-tick"><input type="checkbox" data-mail-approve="${esc(d.id)}" ${d.state === "Validé" && !d.stale ? "checked" : ""} ${locked || g?.key === "unassigned" ? "disabled" : ""}> Message relu et validé</label>${error ? `<small>${esc(error)}</small>` : ""}<label class="mail-tick"><input type="checkbox" data-mail-field="reminderEnabled" data-mail-id="${esc(d.id)}" ${d.reminderEnabled ? "checked" : ""} ${locked ? "disabled" : ""}> Relancer si aucune réponse</label><label>Délai<select data-mail-field="reminderDays" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}>${[2, 3, 5, 7, 14].map((n) => `<option value="${n}" ${Number(d.reminderDays || 3) === n ? "selected" : ""}>Après ${n} jours</option>`).join("")}</select></label>` : `<p>${d.reminderCount ? "Relance envoyée le " + mailTime(d.reminderSentAt) : d.reminderEnabled && !d.paused ? "Relance prévue le " + mailTime(d.nextReminderAt) : "Relance arrêtée / non activée"}</p>${d.reminderEnabled && !d.paused ? `<button data-mail-pause="${esc(d.id)}" ${!mailSession || mailBusy ? "disabled" : ""}>Arrêter la relance</button>` : ""}${d.threadId ? `<a href="https://mail.google.com/mail/u/${encodeURIComponent(d.mailAccount || mailSession?.email || "0")}/#all/${encodeURIComponent(d.threadId)}" target="_blank" rel="noopener">Voir la conversation ↗</a>` : ""}`}</div></div><details class="mail-editor"><summary>${mailIsSent(d) ? "Voir le message envoyé et le journal" : "Lire et modifier le message et sa relance"}</summary><label>Objet<input value="${esc(d.subject)}" data-mail-field="subject" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}></label><label>Message<textarea rows="10" data-mail-field="body" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}>${esc(d.body)}</textarea></label><label>Relance · envoyée au maximum une fois<textarea rows="5" data-mail-field="reminderBody" data-mail-id="${esc(d.id)}" ${locked ? "disabled" : ""}>${esc(d.reminderBody || "")}</textarea></label>${d.history ? `<ul>${d.history.map((h) => `<li>${mailTime(h.at)} · ${esc(h.event)}</li>`).join("")}</ul>` : ""}</details></article>`;
 }
 function mailRefresh() {
   const open = [
@@ -176,7 +177,7 @@ messages = function (p) {
     )
     .join(
       "",
-    )}</div><div class="mail-batch"><div><strong>${selected.length} sélectionné(s) · ${ready.length} prêt(s) à envoyer</strong><small>Un message distinct par fournisseur.</small></div><div class="actions"><button data-mail-expand>Afficher tous les textes</button><button data-mail-all>Tout sélectionner</button><button data-mail-reminders ${!selected.length || mailBusy ? "disabled" : ""}>Relance à J+3</button><button data-mail-validate ${!selected.length || mailBusy ? "disabled" : ""}>Valider la sélection</button><button class="primary" data-mail-send ${!ready.length || !mailSession || mailBusy || demoMode ? "disabled" : ""}>${mailBusy ? "Traitement en cours…" : `Envoyer les ${ready.length} messages validés`}</button></div></div>${visible.map((r) => mailRowHTML(p, r)).join("") || '<div class="empty">Aucune demande dans cette vue. Ajoutez des options et associez leurs fournisseurs et contacts pour commencer.</div>'}<p class="note">Une réponse signifie qu’un message est arrivé dans la conversation, pas que les pièces sont confirmées. Les réponses automatiques arrêtent aussi la relance et demandent votre lecture.</p><details><summary>Ancien historique des échanges</summary>${supplierOldMessages(p).split('<details class="draft-disclosure">')[0]}</details>`;
+    )}</div><div class="mail-batch"><div><strong>${selected.length} sélectionné(s) · ${ready.length} prêt(s) à envoyer</strong><small>Un message distinct par fournisseur.</small></div><div class="actions"><button data-mail-expand>Afficher tous les textes</button><button data-mail-all>Tout sélectionner</button><button data-mail-reminders ${!selected.length || mailBusy ? "disabled" : ""}>Relance à J+3</button><button data-mail-validate ${!selected.length || mailBusy ? "disabled" : ""}>Valider la sélection</button><button class="primary" data-mail-send ${!ready.length || !mailSession || mailBusy || demoMode ? "disabled" : ""}>${mailBusy ? "Traitement en cours…" : `Envoyer / programmer · ${ready.length} messages`}</button></div></div>${visible.map((r) => mailRowHTML(p, r)).join("") || '<div class="empty">Aucune demande dans cette vue. Ajoutez des options et associez leurs fournisseurs et contacts pour commencer.</div>'}<p class="note">Une réponse signifie qu’un message est arrivé dans la conversation, pas que les pièces sont confirmées. Les réponses automatiques arrêtent aussi la relance et demandent votre lecture.</p><details><summary>Ancien historique des échanges</summary>${supplierOldMessages(p).split('<details class="draft-disclosure">')[0]}</details>`;
 };
 async function mailAPI(route, body) {
   if (demoMode) throw Error("La simulation ne peut pas accéder à Gmail.");
@@ -208,12 +209,14 @@ function applyMailStatus(data) {
   mailServiceMode = data.mode || "";
   mailTestRecipients = data.testRecipients || [];
   mailServiceLocal = data.localService === true;
+  mailSchedulingSupported = data.schedulingSupported === true;
   for (const status of data.jobs || []) {
     const d = (db.supplierDrafts || []).find((x) => x.id === status.id);
     if (d && (!d.mailAccount || d.mailAccount === data.email)) {
       d.deliveryState = status.state;
       for (const k of [
         "sentAt",
+        "scheduledAt",
         "threadId",
         "reminderEnabled",
         "reminderCount",
@@ -331,6 +334,19 @@ document.addEventListener("click", async (event) => {
   const b = event.target.closest("button");
   if (!b) return;
   try {
+    if (b.dataset.mailReschedule || b.dataset.mailCancelScheduled) {
+      if(!mailSession || mailBusy || demoMode) return;
+      const id=b.dataset.mailReschedule||b.dataset.mailCancelScheduled;
+      const d=(db.supplierDrafts||[]).find(d=>d.id===id);
+      if(!d||d.deliveryState!=='En attente d’envoi'||d.paused)return;
+      if(b.dataset.mailReschedule) {
+        const date=new Date(d.scheduledAt);const local=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
+        modal('Modifier l’envoi programmé',field('scheduledLocal','Jour et heure','datetime-local',local)+`<p>Heure de votre appareil : ${esc(Intl.DateTimeFormat().resolvedOptions().timeZone)}.</p>`,async data=>{
+          const at=new Date(data.scheduledLocal);if(!Number.isFinite(at.getTime())||at.getTime()<=Date.now())throw Error('Choisissez une date future.');
+          applyMailStatus(await mailAPI('reschedule',{id,scheduledAt:at.toISOString()}));
+        });
+      }else modal('Annuler cet envoi programmé ?',`<p>Le message à ${esc(d.recipient)} ne sera pas envoyé si le service n’a pas encore commencé son envoi.</p>`,async()=>{applyMailStatus(await mailAPI('pause',{ids:[id]}));});
+    }
     if (b.hasAttribute("data-mail-settings")) mailSettings();
     if (b.dataset.mailFilter) {
       mailFilter = b.dataset.mailFilter;
@@ -443,11 +459,13 @@ document.addEventListener("click", async (event) => {
       );
       if (!rows.length || !mailSession || demoMode) return;
       modal(
-        "Envoyer le lot depuis " + mailSession.email,
-        `<p>${rows.length} messages individuels seront transmis. Relances : ${rows.filter((r) => r.draft.reminderEnabled).length}, au maximum une par message.</p><ul>${rows.map((r) => `<li><strong>${esc(r.draft.supplierName)}</strong> · ${esc(r.draft.recipient)}<br>${esc(r.draft.subject)}</li>`).join("")}</ul><p>${mailServiceLocal ? "Pour ces essais locaux, les relances nécessitent que le service reste lancé et que la connexion Atelier soit encore valide." : "Le suivi nécessite un service actif et les droits Atelier valides."} Vous pouvez arrêter les relances depuis ce tableau.</p><label class="mail-tick"><input type="checkbox" name="confirmSend" required> Je confirme l’envoi de ce lot et les relances cochées.</label>`,
+        "Envoyer ou programmer depuis " + mailSession.email,
+        `<p>${rows.length} messages individuels seront transmis. Relances : ${rows.filter((r) => r.draft.reminderEnabled).length}, au maximum une par message.</p><ul>${rows.map((r) => `<li><strong>${esc(r.draft.supplierName)}</strong> · ${esc(r.draft.recipient)}<br>${esc(r.draft.subject)}</li>`).join("")}</ul><p>${mailServiceLocal ? "Pour ces essais locaux, les relances nécessitent que le service reste lancé et que la connexion Atelier soit encore valide." : "Le suivi nécessite un service actif et les droits Atelier valides."} Vous pouvez arrêter les relances depuis ce tableau.</p><label>Quand envoyer ?<select name="sendWhen"><option value="now">Dès validation</option><option value="later" ${mailSchedulingSupported?"":"disabled"}>Choisir un jour et une heure${mailSchedulingSupported?"":" — service à mettre à jour"}</option></select></label><label>Jour et heure<input type="datetime-local" name="scheduledLocal"></label><p class="note">Heure de votre appareil : ${esc(Intl.DateTimeFormat().resolvedOptions().timeZone)}. Le service doit rester actif à l’heure prévue. Le service vérifie les envois environ chaque minute ; une indisponibilité reporte l’envoi à sa reprise.</p><label class="mail-tick"><input type="checkbox" name="confirmSend" required> Je confirme l’envoi de ce lot et les relances cochées.</label>`,
         (data) => {
           if (!data.confirmSend) throw Error("Confirmez le lot.");
-          void sendMailBatch(rows.map((r) => r.draft));
+          let scheduledAt = null;
+          if(data.sendWhen==='later') {if(!mailSchedulingSupported)throw Error('Mettez à jour le service mail pour programmer un envoi.');const at=new Date(data.scheduledLocal);if(!data.scheduledLocal||!Number.isFinite(at.getTime())||at.getTime()<=Date.now())throw Error('Choisissez un jour et une heure futurs.');scheduledAt=at.toISOString();}
+          void sendMailBatch(rows.map((r) => r.draft), scheduledAt);
         },
       );
     }
@@ -459,13 +477,14 @@ document.addEventListener("click", async (event) => {
     toast(error.message);
   }
 });
-async function sendMailBatch(drafts) {
+async function sendMailBatch(drafts, scheduledAt = null) {
+  if(scheduledAt&&!mailSchedulingSupported)throw Error("Le service mail doit être mis à jour avant de programmer un envoi.");
   mailBusy = true;
   mailRefresh();
   try {
     for (const draft of drafts) mailRecord(draft);
     if (!save()) throw Error("Sauvegarde impossible : aucun message transmis.");
-    const data = await mailAPI("send", { confirmed: true, messages: drafts });
+    const data = await mailAPI("send", { confirmed: true, messages: drafts.map(d=>({...d,scheduledAt})) });
     applyMailStatus(data);
     for (const d of drafts) mailSelection.delete(d.id);
     toast(

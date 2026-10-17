@@ -13,6 +13,21 @@ export function validEmail(value) {
     !/\.(invalid|test|example)$/i.test(value)
   );
 }
+export function mailSchedule(value, now = Date.now()) {
+  if (value === undefined || value === null || value === '') return null;
+  const at = Date.parse(value);
+  if (!Number.isFinite(at) || at <= now) throw Error('Choisissez une date et une heure futures.');
+  return new Date(at).toISOString();
+}
+export function rescheduleJob(account, id, value, now = Date.now()) {
+  const job = (account.jobs || []).find(j => j.id === id);
+  if (!job || job.state !== 'En attente d’envoi' || job.paused || job.sentAt) throw Error('Cet envoi ne peut plus être déplacé.');
+  const scheduledAt = mailSchedule(value, now);
+  if (!scheduledAt) throw Error('Choisissez une date et une heure.');
+  job.scheduledAt = scheduledAt;
+  job.history.push({at:new Date(now).toISOString(),event:'Envoi reprogrammé au ' + scheduledAt});
+  return job;
+}
 export function validateJob(input) {
   if (
     !input ||
@@ -52,6 +67,7 @@ export function validateJob(input) {
     body: input.body,
     reminderBody: input.reminderBody || "",
     reminderEnabled: input.reminderEnabled === true,
+    scheduledAt: input.scheduledAt || null,
     reminderDays: Math.max(1, Math.min(30, Number(input.reminderDays) || 3)),
   };
 }
@@ -102,7 +118,7 @@ export function detectReply(thread, job) {
 export function addJobs(account, inputs, now = Date.now()) {
   if (!Array.isArray(inputs) || !inputs.length || inputs.length > 50)
     throw Error("Choisissez entre 1 et 50 messages.");
-  const validated = inputs.map(validateJob); // Valider tout le lot avant de le modifier.
+  const validated = inputs.map(input => ({...validateJob(input),scheduledAt:mailSchedule(input.scheduledAt, now)})); // Valider tout le lot avant de le modifier.
   if (
     validated.some((input) =>
       (account.closedProjects || []).includes(input.project),
@@ -140,6 +156,7 @@ export async function processAccount(account, api, persist, now = Date.now()) {
       continue;
     }
     if (job.state === "En attente d’envoi") {
+      if (job.scheduledAt && Date.parse(job.scheduledAt) > now) continue;
       job.outboundId = randomUUID();
       job.state = "Envoi en cours";
       persist();

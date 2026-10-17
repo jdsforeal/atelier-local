@@ -8,7 +8,7 @@ import {
 } from "node:crypto";
 import { readFileSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
 import path from "node:path";
-import { addJobs, processAccount } from "./core.mjs";
+import { addJobs, processAccount, rescheduleJob } from "./core.mjs";
 import { createCloudMailAuth } from "./cloud-auth.mjs";
 import { mailRecipientGuard, guardMailTransport } from "./safety.mjs";
 const env = process.env;
@@ -170,6 +170,7 @@ async function tick() {
 function summary(account) {
   return {
     email: account.email,
+    schedulingSupported: true,
     mode: env.MAIL_MODE || "sandbox",
     testRecipients:(env.MAIL_MODE||"sandbox")==="sandbox"?(env.MAIL_TEST_RECIPIENTS||"").split(",").map(x=>x.trim()).filter(Boolean):[],
     localService: ["127.0.0.1","localhost"].includes(publicURL.hostname),
@@ -179,6 +180,7 @@ function summary(account) {
         id,
         state,
         sentAt,
+        scheduledAt,
         threadId,
         reminderEnabled,
         reminderCount,
@@ -193,6 +195,7 @@ function summary(account) {
         id,
         state,
         sentAt,
+        scheduledAt,
         threadId,
         reminderEnabled,
         reminderCount,
@@ -377,6 +380,14 @@ const server = http.createServer(async (req, res) => {
       reply(res, 202, visibleSummary());
       void tick();
       return;
+    }
+    if (url.pathname === "/api/mail/reschedule" && req.method === "POST") {
+      const input = await body(req);
+      const job = (account.jobs || []).find(j => j.id === input.id);
+      if (!job || (requireCloud && job.studioId !== cloudContext.studioId)) throw Error('Envoi introuvable.');
+      if (requireCloud) await cloudAuth.project(cloudContext, job);
+      rescheduleJob(account, input.id, input.scheduledAt);
+      persist(); reply(res, 200, visibleSummary()); return;
     }
     if (url.pathname === "/api/mail/pause" && req.method === "POST") {
       const input = await body(req);

@@ -71,3 +71,9 @@ Les appels réels depuis un site GitHub Pages restent désactivés : seul l’At
 Le mode sandbox affiche uniquement les adresses de test autorisées par le serveur, exige un objet `[TEST ATELIER]`, et refuse tout autre compte expéditeur ou destinataire. Les adresses du pilote sont configurées dans le fichier privé local, pas dans GitHub.
 
 Configuration Google à réaliser une fois dans le projet existant : activer Gmail API, créer un client OAuth Web « Atelier Gmail — essais locaux », redirection `http://127.0.0.1:8787/oauth/callback` ; aucun besoin de modifier le client utilisé par Supabase. Le propriétaire crée le client et télécharge son JSON directement dans son dossier privé. `scripts/import-mail-oauth.mjs` importe ce fichier explicite sans afficher les identifiants ; `scripts/check-mail-local.mjs` vérifie la présence des paramètres sans leurs valeurs. Ne jamais transmettre le JSON ou le secret dans le chat.
+
+### Envois programmés
+
+La validation d’un lot permet de choisir une date et une heure dans le fuseau de l’appareil. Le navigateur transmet un instant UTC au service, qui conserve le lot et ne l’envoie pas avant cet instant. Les relances partent du moment d’envoi effectif. La date peut être déplacée et l’envoi annulé tant que le traitement n’a pas commencé. Les droits et les restrictions de destinataires sont toujours vérifiés.
+
+Le service doit rester actif ; son traitement s’exécute environ chaque minute. Une interruption retarde les envois à sa reprise. Mettre à jour puis redémarrer le service pour activer la fonction ; le client désactive la programmation si le serveur ne renvoie pas `schedulingSupported: true`. Le déploiement du seul site ne met pas à jour le service Gmail.

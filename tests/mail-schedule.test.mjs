@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {addJobs,processAccount,rescheduleJob} from '../mail-service/core.mjs';
+const now=Date.parse('2026-10-17T12:00:00Z');
+const input={id:'scheduled',project:'p',recipient:'test@atelier.fr',subject:'Demande',body:'Bonjour, merci.',reminderEnabled:true,reminderBody:'Une nouvelle ?',reminderDays:3,scheduledAt:new Date(now+3600000).toISOString()};
+const account={email:'studio@atelier.fr',jobs:[]};let sends=0;const api={send:async()=>{sends++;return {id:'sent',threadId:'thread'}},thread:async()=>({messages:[]})};
+addJobs(account,[input],now);await processAccount(account,api,()=>{},now);assert.equal(sends,0);assert.equal(account.jobs[0].state,'En attente d’envoi');
+rescheduleJob(account,'scheduled',new Date(now+7200000).toISOString(),now);await processAccount(account,api,()=>{},now+3600000);assert.equal(sends,0);
+await processAccount(account,api,()=>{},now+7200000);assert.equal(sends,1);assert.equal(account.jobs[0].sentAt,new Date(now+7200000).toISOString());assert.equal(account.jobs[0].nextReminderAt,new Date(now+7200000+3*86400000).toISOString());
+assert.throws(()=>rescheduleJob(account,'scheduled',new Date(now+9000000).toISOString(),now),/ne peut plus/);
+assert.throws(()=>addJobs({jobs:[]},[{...input,scheduledAt:new Date(now-1).toISOString()}],now),/futures/);
+assert.throws(()=>addJobs({jobs:[]},[{...input,scheduledAt:'not a date'}],now),/futures/);
+const cancelled={email:account.email,jobs:[]};addJobs(cancelled,[input],now);cancelled.jobs[0].paused=true;cancelled.jobs[0].state='Annulé avant envoi';await processAccount(cancelled,api,()=>{},now+7200000);assert.equal(sends,1);
+console.log('Programmation : aucun envoi anticipé, reprogrammation, annulation, dates invalides et relance calculée depuis l’envoi réel vérifiés, sans Gmail.');
