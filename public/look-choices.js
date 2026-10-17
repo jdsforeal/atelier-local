@@ -33,9 +33,9 @@ function lookChoicesView(project) {
   const displayedLooks = project.looks.filter(
     (look) => look.id === choiceLookId,
   );
-  return `<div class="look-selector">${project.looks.map((look) => `<button data-choice-look="${esc(look.id)}" class="${look.id === choiceLookId ? "active" : ""}">${esc(look.name)}</button>`).join("")}</div><div class="process-guide"><strong>Une méthode claire</strong>
+  return `<div class="look-navigation"><div class="look-selector">${project.looks.map((look) => `<button data-choice-look="${esc(look.id)}" class="${look.id === choiceLookId ? "active" : ""}">${esc(look.name)}</button>`).join("")}</div>${project.status!=='Terminé'&&canEditProject(project.id)?'<button class="primary" data-action="look">＋ Nouveau look</button>':''}</div><details class="process-guide"><summary>Aide et raccourcis du projet</summary><strong>Une méthode claire</strong>
     <p>1. Comparer les pistes du look → 2. Comparer les pièces de chaque besoin → 3. Retenir les options → 4. Confirmer disponibilité et budget → 5. Réception, essayage et retours.</p>
-    <small>« Retenue » est un choix créatif. « Engagé » est une décision de budget. Les deux sont distincts.</small></div>
+    <small>« Retenue » est un choix créatif. « Engagé » est une décision de budget. Les deux sont distincts.</small></details>
     ${displayedLooks
       .map((look) => {
         const archived = project.status === "Terminé";
@@ -53,10 +53,10 @@ function lookChoicesView(project) {
           (entry) => entry.look === look.id,
         );
         return `<section class="look-workspace"><div class="section-head"><div><small>LOOK · ${esc(look.person || project.client)}</small><h2>${esc(look.name)}</h2></div>
-        ${!archived ? `<button class="quiet" data-add-need="${esc(look.id)}">＋ Besoin</button><button data-add-variant="${esc(look.id)}">＋ Autre piste</button>` : '<span class="tag">Archivé</span>'}</div>
-        <div class="variant-tabs">${look.variants.map((candidate) => `<button data-look-variant="${esc(look.id)}:${esc(candidate.id)}" class="${candidate.id === look.activeVariant ? "active" : ""}"><strong>${esc(candidate.name)}</strong><small>${esc(candidate.status)}</small></button>`).join("")}</div>
+        ${!archived ? `<button class="primary" data-batch-import-launch data-import-look="${esc(look.id)}">＋ Ajouter des pièces</button>` : '<span class="tag">Archivé</span>'}</div>
+        <details class="look-variant-tools"><summary>Variantes et réglages du look <span>${look.variants.length} variante${look.variants.length>1?'s':''}</span></summary><p class="note">Les variantes sont différentes propositions pour « ${esc(look.name)} ». Pour créer un look indépendant, utilisez « Nouveau look ».</p>${!archived?`<div class="actions"><button data-add-variant="${esc(look.id)}">＋ Créer une variante</button><button class="quiet" data-add-need="${esc(look.id)}">＋ Ajouter une catégorie</button></div>`:''}<div class="variant-tabs">${look.variants.map((candidate) => `<button data-look-variant="${esc(look.id)}:${esc(candidate.id)}" class="${candidate.id === look.activeVariant ? "active" : ""}"><strong>${esc(candidate.name)}</strong><small>${esc(candidate.status)}</small></button>`).join("")}</div>
         <div class="variant-summary"><span>${esc(variant?.name)}${variant?.brief ? " · " + esc(variant.brief) : ""}${look.variantReason ? " · " + esc(look.variantReason) : ""}</span>
-        ${!archived ? `<button class="quiet" data-validate-variant="${esc(look.id)}">Valider cette piste</button>` : ""}</div>
+        ${!archived ? `<button class="quiet" data-validate-variant="${esc(look.id)}">Valider cette variante</button>` : ""}</div></details>
         ${look.needs
           .map((need) => {
             const options = allPieces.filter(
@@ -77,8 +77,8 @@ function lookChoicesView(project) {
                   )) &&
                 piece.selection === "Retenue",
             );
-            return `<div class="need-section"><div class="section-head"><div><h3>${esc(need.name)}</h3><small>${need.multiple ? "Plusieurs pièces finales possibles" : "Une pièce finale"} · ${options.length} options dans cette piste · ${retained.length} retenue${retained.length > 1 ? "s" : ""} au total</small></div>
-            ${!archived ? `<button class="quiet" data-multiple-need="${esc(look.id)}:${esc(need.id)}">Réglage</button><button data-add-option="${esc(look.id)}:${esc(need.id)}">＋ Une option</button><button data-batch-import-launch data-import-look="${esc(look.id)}">＋ Plusieurs liens / images</button>` : ""}</div>
+            return `<div class="need-section"><div class="section-head"><div><h3>${esc(need.name)}</h3><small>${need.multiple ? "Plusieurs pièces finales possibles" : "Une pièce finale"} · ${options.length} pièces dans cette variante · ${retained.length} retenue${retained.length > 1 ? "s" : ""} au total</small></div>
+            ${!archived ? `<button data-batch-import-launch data-import-look="${esc(look.id)}" data-import-need="${esc(need.id)}">＋ Ajouter des pièces</button><details class="need-tools"><summary aria-label="Réglages de ${esc(need.name)}">⋯</summary><button class="quiet" data-multiple-need="${esc(look.id)}:${esc(need.id)}">Composition : une ou plusieurs pièces finales</button></details>` : ""}</div>
             ${
               retained.some((piece) => piece.variantId !== look.activeVariant)
                 ? `<p class="note">Une pièce de l’autre piste est retenue : ${retained
@@ -87,7 +87,7 @@ function lookChoicesView(project) {
                     .join(", ")}.</p>`
                 : ""
             }
-            <div class="choices-grid">${options.map((piece) => choiceCard(piece, archived)).join("") || '<p class="note">Aucune option dans cette piste. Vous pouvez en ajouter une.</p>'}</div></div>`;
+            <div class="choices-grid">${options.map((piece) => choiceCard(piece, archived)).join("") || '<p class="note">Ajoutez une ou plusieurs pièces depuis des liens, des images ou une saisie manuelle.</p>'}</div></div>`;
           })
           .join("")}
         <details class="selection-log"><summary>Historique des décisions (${history.length})</summary>
@@ -135,6 +135,7 @@ render = function () {
   processRender();
   if (view === "detail" && tab === "looks") {
     const content = $("#content");
+    content.querySelector('.title-row [data-action="look"]')?.remove();
     const cards = content.querySelector(".cards");
     if (cards) cards.outerHTML = lookChoicesView(project());
   }
@@ -232,8 +233,8 @@ document.addEventListener("click", (event) => {
       (look) => look.id === button.dataset.addVariant,
     );
     modal(
-      "Ajouter une piste pour ce look",
-      field("name", "Nom de la proposition") +
+      "Créer une variante de ce look",
+      field("name", "Nom de la variante (pas un nouveau look)") +
         field("brief", "Intention créative", "textarea"),
       (data) => {
         const variant = { ...data, id: uid(), status: "À comparer" };
@@ -384,3 +385,15 @@ document.addEventListener("change", (event) => {
   }
 });
 render();
+
+const lookCreationPreviousAction=action;
+action=function(a){
+ if(a!=='look')return lookCreationPreviousAction(a);
+ const p=project();if(!p||p.status==='Terminé'||!canEditProject(p.id))return toast('Choisissez un projet actif que vous pouvez modifier.');
+ modal('Créer un nouveau look',field('name','Nom du look')+field('person','Personne / silhouette — facultatif')+field('needs','Catégories, séparées par une virgule','text','Haut, Bas, Chaussures, Accessoire'),data=>{
+  const id=uid(),name=String(data.name||'').trim();if(!name)throw Error('Donnez un nom au look.');
+  const variant={id:id+'-a',name:'Version initiale',status:'À comparer'};
+  p.looks.push({id,name,person:data.person||'',needs:[...new Set(String(data.needs||'').split(',').map(n=>n.trim()).filter(Boolean))].map((name,i)=>({id:id+'-need-'+i,name,category:name,state:'À chercher',multiple:false})),variants:[variant],activeVariant:variant.id});
+  choiceLookId=id;tab='looks';
+ });
+};

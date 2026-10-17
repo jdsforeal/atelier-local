@@ -110,7 +110,7 @@ render = function () {
     $("#content").insertAdjacentHTML("beforeend", flowActionsMarkup(p));
   if (tab === "looks") {
     $(".process-guide").innerHTML =
-      '<strong>Créer et vérifier en parallèle</strong><p>Importez vos options, préparez les demandes fournisseurs et composez la sélection client dès maintenant. Une validation créative ne réserve pas la pièce.</p><button data-flow-board>Préparer la sélection client</button><button data-tab="messages">Vérifier les disponibilités</button>';
+      '<summary>Aide et raccourcis du projet</summary><strong>Créer et vérifier en parallèle</strong><p>Importez vos options, préparez les demandes fournisseurs et composez la sélection client dès maintenant. Une validation créative ne réserve pas la pièce.</p><button data-flow-board>Préparer la sélection client</button><button data-tab="messages">Vérifier les disponibilités</button>';
     document.querySelectorAll("[data-edit-piece]").forEach((b) => {
       const x = db.pieces.find((x) => x.id === b.dataset.editPiece);
       if (x && b.closest(".choice-card"))

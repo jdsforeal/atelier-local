@@ -104,7 +104,7 @@ assert.equal(placement.projects[0].looks[0].needs.length,4);
 console.log('Classement des pièces : catégorie prioritaire, besoin personnalisé conservé, création sans doublon et look isolé OK.');
 // Exécuter les vrais callbacks de création depuis + Bas et de modification.
 let callback, listener, serial=0;
-const placementContext={db:{...placement,pieces:[],contacts:[],selectionHistory:[]},pid:'project',view:'home',tab:'',render:()=>{},pieceForm:()=>'',field:()=>'',modal:(_title,_fields,fn)=>callback=fn,project:()=>placement.projects[0],uid:()=> 'test-'+(++serial),safeUrl:()=>true,contactLabel:c=>c.name,document:{addEventListener:(type,fn)=>{if(type==='click')listener=fn;}}};
+const placementContext={db:{...placement,pieces:[],contacts:[],selectionHistory:[]},pid:'project',view:'home',tab:'',action:()=>{},canEditProject:()=>true,toast:()=>{},render:()=>{},pieceForm:()=>'',field:()=>'',modal:(_title,_fields,fn)=>callback=fn,project:()=>placement.projects[0],uid:()=> 'test-'+(++serial),safeUrl:()=>true,contactLabel:c=>c.name,document:{addEventListener:(type,fn)=>{if(type==='click')listener=fn;}}};
 vm.createContext(placementContext);
 vm.runInContext(fs.readFileSync('public/look-model.js','utf8')+'\n'+fs.readFileSync('public/look-choices.js','utf8'),placementContext);
 placement.projects[0].looks[0].activeVariant='variant';
@@ -117,3 +117,13 @@ added.needId='bas';placementContext.editPiece(added.id);
 callback({...added,project:'project',look:'look',category:'Haut',price:'39.99',caution:'0'});
 assert.equal(added.needId,'haut','Modifier une fiche déjà mal classée corrige son besoin');
 console.log('Parcours réels : + Bas avec catégorie Haut et correction d’une fiche existante OK.');
+
+// Créer un look indépendant ne crée pas une variante dans le look courant.
+const countBefore=placement.projects[0].looks.length;
+placementContext.action('look');callback({name:'Look 2',person:'Artiste',needs:'Haut, Bas, Haut'});
+const independent=placement.projects[0].looks.at(-1);
+assert.equal(placement.projects[0].looks.length,countBefore+1);
+assert.equal(independent.name,'Look 2');assert.equal(independent.variants.length,1);
+assert.equal(independent.needs.length,2);assert.equal(vm.runInContext('choiceLookId',placementContext),independent.id);
+assert.equal(placementContext.tab,'looks');assert.equal(added.look,'look');
+console.log('Nouveau look : indépendant, sélection immédiate, une variante initiale et pièces existantes conservées.');
