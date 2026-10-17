@@ -4,6 +4,7 @@ function batchShopLink(url){const valid=productPublicURL(url);if(!valid)return '
 
 function openBatchImport(projectId=pid,initialLook='',sourceForm=null,initialNeed='',destination='pieces'){
  const mood=destination==='mood';
+ const moodKind=typeof activeMoodKind==='undefined'?'stylisme':activeMoodKind;
  if(activeBatchImport)return;
  const project=db.projects.find(p=>p.id===projectId);
  if(!project||!canEditProject(projectId)||project.status==='Terminé'||project.deletedAt)return toast('Choisissez un projet actif que vous pouvez modifier.');
@@ -100,7 +101,7 @@ function openBatchImport(projectId=pid,initialLook='',sourceForm=null,initialNee
    for(const row of state.rows.filter(r=>r.include)){
     const images=[...row.selectedImages].map(image=>({image,originalImage:image,crop:null}));
     for(const file of row.files.filter(f=>f.selected)){if(!file.data)file.data={image:await baseImageImport(file.file)};images.push(file.data);}
-    const metadata={caption:row.name.trim(),description:row.description,url:row.url};
+    const metadata={kind:moodKind,caption:row.name.trim(),description:row.description,url:row.url};
     if(!images.length)additions.push({...metadata,image:''});
     else for(const image of images)additions.push({...metadata,...image});
    }

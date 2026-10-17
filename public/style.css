@@ -1986,3 +1986,5 @@ body.atelier-auth-pending > aside,body.atelier-auth-pending > main {visibility:h
 .overview-pdf-preview{display:grid;gap:14px;background:#eeeee8;padding:14px;border-radius:12px;max-height:620px;overflow:auto}
 .overview-pdf-page{padding:0;border:0;background:white;box-shadow:0 3px 14px #00000012;cursor:zoom-in;border-radius:2px;overflow:hidden}
 .overview-pdf-page img{display:block;width:100%;height:auto;object-fit:contain}
+
+.mood-kind-navigation{display:flex;gap:8px;margin:20px 0}.mood-reference{border:1px solid #e0e4d9;border-radius:14px;padding:18px;margin-bottom:16px}.mood-reference h3{margin:6px 0}.mood-reference-image{display:block;width:100%;padding:0;background:#efefe9;border:0}.mood-reference-image img{display:block;max-height:420px;width:100%;object-fit:contain}.mood-document-dialog{width:min(1100px,94vw);max-height:94vh}.mood-document-content iframe{width:100%;height:72vh;border:0}.mood-document-content img{display:block;max-width:100%;max-height:75vh;margin:auto;object-fit:contain}

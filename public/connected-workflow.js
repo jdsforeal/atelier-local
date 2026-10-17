@@ -32,7 +32,7 @@ function importInspirations() {
         url: "",
         filename: files[index].name,
       }));
-      p.boards.push(...images);
+      p.boards.push(...images.map(image=>({...image,kind:typeof activeMoodKind==='undefined'?'stylisme':activeMoodKind})));
       p.boardRevision = (p.boardRevision || 0) + 1;
     },
   );

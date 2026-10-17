@@ -37,7 +37,7 @@ function openMoodInspiration(index){const p=project();if(!editableVisualProject(
   if(!editableVisualProject(p))throw Error('Vos droits de modification ont changé.');if(data.url&&!safeUrl(data.url))throw Error('Indiquez un lien http ou https valide.');
   const file=form.elements.inspirationPhoto.files[0]||form.elements.piecePhoto.files[0];let imagePatch={image:data.imageUrl||board?.image||''};
   if(file){const [prepared]=await prepareImageBatch([file]);imagePatch=prepared;}else if(imagePatch.image!==board?.image){imagePatch.originalImage=imagePatch.image;imagePatch.crop=null;}
-  const patch={caption:String(data.name||'').trim(),url:data.url||'',description:data.note||'',...imagePatch};if(!patch.caption&&!patch.image&&!patch.url)throw Error('Ajoutez une image, un lien ou une description.');
+  const patch={kind:board?.kind||(typeof activeMoodKind==='undefined'?'stylisme':activeMoodKind),caption:String(data.name||'').trim(),url:data.url||'',description:data.note||'',...imagePatch};if(!patch.caption&&!patch.image&&!patch.url)throw Error('Ajoutez une image, un lien ou une description.');
   if(board)Object.assign(board,patch);else p.boards.push(patch);p.boardRevision=(p.boardRevision||0)+1;
  });
  const form=document.querySelector('#form');if(form){form.dataset.moodInspiration='1';form.dataset.moodBoardIndex=index===undefined?'':String(index);form.elements.analysisPhoto.name='piecePhoto';form.elements.name.required=false;}

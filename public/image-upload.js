@@ -24,7 +24,7 @@ function refreshImageUpload(input) {
 function enhanceImageUploads() {
   for(const [input,state] of imageUploadStates){if(!input.isConnected){state.urls.forEach(url=>URL.revokeObjectURL(url));imageUploadStates.delete(input);}}
   document.querySelectorAll('input[type="file"][accept*="image/"]').forEach(input=>{
-    if(imageUploadStates.has(input))return;
+    if(imageUploadStates.has(input)||(input.accept||'').includes('application/pdf'))return;
     const zone=document.createElement('div');zone.className='image-upload-zone';
     const icon=document.createElement('span');icon.className='image-upload-icon';icon.setAttribute('aria-hidden','true');
     icon.innerHTML='<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/></svg>';
