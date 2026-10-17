@@ -605,6 +605,7 @@ function quickProjectWizard() {
         db.tasks.push(task);
       }
       db.projects.push(p);
+      planningEnsureActions(p);
       pid = p.id;
       view = "detail";
       tab = "overview";

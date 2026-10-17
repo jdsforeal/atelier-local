@@ -44,6 +44,7 @@ function projectSettings(id, photoOnly = false) {
         const timeline=planningRead(data);
         if(timeline.shoot?.start&&timeline.shoot.start!==p.date)flowMoveDates(db,p,timeline.shoot.start,false);
         planningApply(db,p,timeline);
+        planningEnsureActions(p);
         Object.assign(p, {name:data.name.trim(), client:data.client, type:data.type, season:data.season});
       }
       p.cover = cover;

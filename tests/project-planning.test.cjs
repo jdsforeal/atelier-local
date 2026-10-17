@@ -10,3 +10,10 @@ assert.equal(db.tasks[1].date,'2026-10-09');assert.equal(db.tasks[2].date,'2026-
 assert.equal(planningTaskDate({phase:'fittings'},p),'');
 t.preparation.end='2026-11-01';planningApply(db,p,t);assert.equal(db.tasks[0].date,'2026-10-30');assert.equal(planningTaskDate({phase:'preparation',phaseAnchor:'start',phaseOffset:-15},p),'2026-09-25');
 console.log('Planning : dates et périodes valides, migration jour J, actions liées recalculées, dates libres et actions terminées conservées.');
+
+const {planningSuggest,planningWarnings}=require('../public/project-planning-model.js');
+const proposed=planningSuggest('2026-11-20',['confection','fittings','alterations','delivery'],30);
+assert.equal(proposed.confection.start,'2026-10-21');assert.equal(proposed.fittings.start,'2026-11-17');assert.ok(!proposed.sourcing);assert.ok(!proposed.returns);assert.equal(proposed.delivery.end,'2026-11-27');assert.equal(planningWarnings(proposed).length,0);
+assert.throws(()=>planningSuggest('2026-02-30',[],21));assert.throws(()=>planningSuggest('2026-11-20',[],0));
+assert.ok(planningWarnings({...proposed,reception:{start:'2026-11-18',end:'2026-11-19'}}).length);
+console.log('Propositions : confection indépendante du type, besoins facultatifs, durées et incohérences vérifiés.');
