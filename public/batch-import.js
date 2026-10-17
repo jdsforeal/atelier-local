@@ -109,7 +109,7 @@ function openBatchImport(projectId=pid,initialLook='',sourceForm=null,initialNee
  document.body.append(dialog);paint();dialog.showModal();
 }
 function installBatchImportButton(){
- if(typeof view==='undefined'||view!=='detail'||(typeof tab!=='undefined'&&tab==='looks')||!db.projects.some(p=>p.id===pid&&p.status!=='Terminé'&&!p.deletedAt)||!canEditProject(pid))return;
+ if(typeof view==='undefined'||view!=='detail'||(typeof tab!=='undefined'&&['looks','mood'].includes(tab))||!db.projects.some(p=>p.id===pid&&p.status!=='Terminé'&&!p.deletedAt)||!canEditProject(pid))return;
  const content=document.querySelector('#content');if(!content||content.querySelector('.batch-import-launch'))return;const bar=document.createElement('div');bar.className='toolbar batch-import-launch';bar.innerHTML='<button type="button" class="primary" data-batch-import-launch>＋ Importer des pièces · liens ou captures</button>';content.prepend(bar);
 }
 const batchImportBaseRender=render;render=function(){batchImportBaseRender();installBatchImportButton();};

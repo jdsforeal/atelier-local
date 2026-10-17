@@ -416,6 +416,9 @@ function field(name, label, type = "text", value = "", choices) {
 }
 let submit;
 function modal(name, fields, fn) {
+  delete $("#form").dataset.productImages;
+  delete $("#form").dataset.moodInspiration;
+  delete $("#form").dataset.moodBoardIndex;
   $("#modal-title").textContent = name;
   $("#fields").innerHTML = fields;
   submit = fn;

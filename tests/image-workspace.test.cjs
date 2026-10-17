@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const source=fs.readFileSync('public/image-workspace.js','utf8').split('moodboardMarkup=function')[0];
+const context=vm.createContext({db:{projects:[{id:'p',status:'Préparation'}]},demoMode:false,cloudState:{},cloudSectionWritable:()=>false,save:()=>false});vm.runInContext(source,context);
+assert.equal(context.editablePieceVisual({project:''}),false,'Un compte absent ne peut pas modifier le stock');
+assert.equal(context.editablePieceVisual({project:'p'}),false,'Respect du droit de modification créative');
+const piece={image:'ancienne',originalImage:'originale',photos:['ancienne','dos','ancienne'],price:121};
+const patch=context.pieceVisualPatch(piece,{image:'recadree',originalImage:'originale',crop:{x:.1,y:.1,w:.8,h:.8}});
+assert.deepEqual(Array.from(patch.photos),['recadree','dos']);assert.equal(patch.originalImage,'originale');assert.equal(piece.image,'ancienne','La préparation ne modifie pas la pièce');
+const project={boardRevision:3};assert.throws(()=>context.commitVisual(piece,patch,project),/sauvegarde/);assert.equal(piece.image,'ancienne');assert.equal(project.boardRevision,3);assert.equal(piece.price,121);
+context.save=()=>{throw Error('Stockage indisponible')};assert.throws(()=>context.commitVisual(piece,patch,project),/indisponible/);assert.equal(piece.image,'ancienne');
+context.save=()=>true;context.commitVisual(piece,patch);assert.equal(piece.image,'recadree');assert.equal(piece.originalImage,'originale');assert.equal(piece.price,121);
+console.log('Images : droits créatifs, original, galerie, coût inchangé et retour arrière en cas d’échec de sauvegarde vérifiés.');

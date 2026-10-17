@@ -21,7 +21,7 @@ function loadStudioImage(source) {
     img.src = source;
   });
 }
-async function prepareImageBatch(files) {
+async function prepareImageBatch(files, options = {}) {
   const records = [];
   for (const file of files) {
     const originalImage = await baseImageImport(file),
@@ -36,12 +36,15 @@ async function prepareImageBatch(files) {
       sample.width,
       sample.height,
     );
+    const existing=options.initialCrops?.[records.length];
+    const keepExisting=Array.isArray(options.initialCrops);
+    const initial=existing&&[existing.x,existing.y,existing.w,existing.h].every(Number.isFinite)&&existing.x>=0&&existing.y>=0&&existing.w>0&&existing.h>0&&existing.x+existing.w<=1.001&&existing.y+existing.h<=1.001?existing:{x:0,y:0,w:1,h:1};
     records.push({
       originalImage,
       img,
-      crop,
+      crop:keepExisting?{...initial}:crop,
       suggested: {...crop},
-      useCrop: crop.w < 0.98 || crop.h < 0.98,
+      useCrop:keepExisting?!!existing:crop.w < 0.98 || crop.h < 0.98,
       file,
     });
   }
@@ -412,7 +415,9 @@ document.addEventListener("click", (event) => {
   if (!b) return;
   if (b.dataset.restorePiece) {
     const piece = db.pieces.find((x) => x.id === b.dataset.restorePiece);
+    const previousImage=piece.image;
     piece.image = piece.originalImage;
+    if(piece.photos?.length)piece.photos=[...new Set([piece.image,...piece.photos.filter(photo=>photo!==previousImage)])];
     piece.crop = null;
     save();
     render();
