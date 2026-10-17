@@ -55,8 +55,11 @@ function previewProduct(panel,data){
  const state={data,fields};productImports.set(panel,state);
  preview.innerHTML=`<p class="product-import-notice"><strong>${data.source==='capture'?'Capture lue · à vérifier':data.source==='url'?'Lecture limitée · informations du lien uniquement':data.reason==='partial'?'Fiche partiellement récupérée':'Fiche boutique récupérée'}</strong><br>${esc(data.notice)}${data.url?` <a href="${esc(data.url)}" target="_blank" rel="noopener noreferrer">Ouvrir la fiche boutique ↗</a>`:''}</p><div class="product-import-fields">${fields.filter(([, ,value])=>value!=='').map(([key,label,value])=>`<label class="product-import-check"><input type="checkbox" data-product-field="${key}" ${productFieldReady(form,key)?'checked':''}><span><small>${esc(label)}</small><strong>${esc(value)}</strong>${!productFieldReady(form,key)?'<small>Déjà renseigné : cochez pour remplacer.</small>':''}</span></label>`).join('')}</div>${data.taxEvidence&&!data.taxEvidence.conflict&&(data.taxEvidence.basis!=='unknown'||data.taxEvidence.rate!==null)?`<label class="product-import-check"><input type="checkbox" data-product-tax><span>TVA proposée : ${esc(data.taxEvidence.basis==='unknown'?'Base à confirmer':data.taxEvidence.basis)} · ${esc(data.taxEvidence.rate??'taux inconnu')} %<small>${esc(data.taxEvidence.excerpt)} — à confirmer sur la facture.</small></span></label>`:''}${data.capturePreview?`<label class="product-import-check"><input type="checkbox" data-product-use-capture ${data.images.length?'':'checked'}><span><img src="${esc(data.capturePreview)}" alt="Capture à utiliser pour la pièce" style="max-width:140px;max-height:180px;object-fit:contain">Utiliser cette image comme photo principale (cadrage à l’enregistrement)</span></label>`:''}${data.images.length?`<fieldset class="product-import-photos"><legend>Photos du produit — facultatives</legend><p>Cochez les vues à conserver. Sans sélection, votre image reste inchangée.</p><label>Photo principale, si elle est cochée<select data-product-cover>${data.images.map((url,index)=>`<option value="${index}">Photo ${index+1}</option>`).join('')}</select></label><div>${data.images.map((url,index)=>`<label><input type="checkbox" data-product-photo value="${index}"><img src="${esc(url)}" referrerpolicy="no-referrer" loading="lazy" alt="Photo proposée ${index+1}" onerror="this.hidden=true"><span>Photo ${index+1}</span></label>`).join('')}</div></fieldset>`:data.capturePreview?'<p class="note">Le texte a été lu avant tout rognage. Vérifiez les informations proposées.</p>':'<p class="note">Aucune photo récupérée. Vous pouvez ajouter une capture ou une image dans la fiche.</p>'}<button type="button" class="primary" data-product-apply>Utiliser les informations cochées</button>`;
 }
+const productImportCache=new Map(),productImportPauses=new Map();
 async function requestProductImport(raw){
- const fallback=productFromURL(raw);
+ const fallback=productFromURL(raw),host=new URL(fallback.url).hostname,now=Date.now(),cached=productImportCache.get(fallback.url);
+ if(cached&&now-cached.time<10*60*1000)return structuredClone(cached.data);
+ if((productImportPauses.get(host)||0)>now)return {...fallback,reason:'blocked',notice:'La boutique a refusé la lecture automatique. Aucun nouvel essai automatique pendant 30 minutes. Utilisez une capture déjà disponible ou complétez la fiche manuellement.'};
  let data=fallback;
  try{
    if(['127.0.0.1','localhost'].includes(location.hostname)){
@@ -68,6 +71,8 @@ async function requestProductImport(raw){
  }catch{data={...fallback,notice:fallback.notice+' La lecture complète est indisponible. Vous pouvez compléter avec une image.'};}
 
  if(typeof batchCategory==='function')data.category=batchCategory(data.name);
+ if(data.reason==='blocked')productImportPauses.set(host,Date.now()+30*60*1000);
+ productImportCache.set(fallback.url,{time:Date.now(),data:structuredClone(data)});
  return data;
 }
 document.addEventListener('input',event=>{if(event.target.closest('#fields')&&event.target.matches('input[name],textarea[name],select[name]')&&event.isTrusted)event.target.dataset.userEntered='1';});
