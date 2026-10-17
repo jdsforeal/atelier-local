@@ -1,3 +1,6 @@
+document.addEventListener('click',event=>{if(event.target.closest('[data-tab="pieces"]')&&view==='detail'&&tab!=='pieces'){focusedLook='';category='Tout';filter='';piecePage=0;}},true);
+let projectPiecesDisplay = 'list';
+document.addEventListener('click',event=>{const button=event.target.closest('[data-project-pieces-display]');if(button){projectPiecesDisplay=button.dataset.projectPiecesDisplay;render();}});
 /** L’aperçu emploie les pages exactes du moteur d’export PDF. */
 async function mountOverviewMoodboard(host, p) {
   try {
@@ -28,6 +31,7 @@ async function mountOverviewMoodboard(host, p) {
 }
 /** Actions contextuelles et vue d’ensemble du projet. */
 function refineProjectPresentation() {
+  if (view === 'home') document.querySelector('#content .hero')?.remove();
   if (view !== 'detail' || workspaceIsLocked()) return;
   const p = project(); if (!p) return;
   const rights = cloudRights(p.id), financial = demoMode || rights.budget_read;
@@ -71,6 +75,29 @@ function refineProjectPresentation() {
       flow.before(details); details.append(flow);
       flow.querySelector('.section-head')?.remove();
 
+    }
+  }
+  if (tab === 'looks' || tab === 'pieces') {
+    document.querySelector('.process-guide [data-tab="pieces"]')?.remove();
+    const switcher=document.createElement('nav');switcher.className='project-pieces-switch';switcher.setAttribute('aria-label','Vue des pièces du projet');
+    switcher.innerHTML=`<button data-tab="looks" aria-pressed="${tab==='looks'}">Par looks</button><button data-tab="pieces" aria-pressed="${tab==='pieces'}">Toutes les pièces du projet</button>`;
+    document.querySelector('.tabs')?.after(switcher);
+    if(tab==='pieces') {
+      const all=db.pieces.filter(x=>x.project===p.id);
+      const heading=[...document.querySelectorAll('#content h2')].find(el=>el.textContent==='Toutes les pièces du projet');
+      heading?.closest('.section-head')?.querySelector('button')?.remove();
+      const summary=document.createElement('p');summary.className='note';summary.textContent=`${all.length} pièces · ${all.filter(x=>x.selection==='Retenue').length} retenue(s) · ${all.filter(x=>!x.selection||x.selection==='À comparer').length} à comparer`;
+      heading?.after(summary);
+      const list=document.querySelector('.piece-list');
+      if(list){
+        list.classList.toggle('project-piece-grid',projectPiecesDisplay==='grid');
+        const toggle=document.createElement('div');toggle.className='project-pieces-display';toggle.innerHTML=`<button data-project-pieces-display="list" aria-pressed="${projectPiecesDisplay==='list'}">Liste</button><button data-project-pieces-display="grid" aria-pressed="${projectPiecesDisplay==='grid'}">Vignettes</button>`;
+        list.before(toggle);
+        list.querySelectorAll('.piece-row').forEach(row=>{const id=row.querySelector('[data-edit-piece]')?.dataset.editPiece;const piece=all.find(x=>x.id===id);if(!piece)return;const badge=document.createElement('span');badge.className='tag';badge.textContent=piece.selection||'À comparer';row.querySelector('.piece-info')?.append(badge);});
+      }
+      const manual=document.querySelector('.toolbar [data-action="piece"]');manual?.remove();
+      const importBar=document.querySelector('.batch-import-launch');
+      if(importBar){const toolbar=document.querySelector('#piece-search')?.closest('.toolbar');if(toolbar){toolbar.append(...importBar.children);importBar.remove();}}
     }
   }
   if (tab === 'client-board') {
