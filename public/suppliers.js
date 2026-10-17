@@ -46,6 +46,8 @@ function resolveSupplier(name, type = "À préciser") {
   }
   return s;
 }
+function representationNames(ids){return [...new Set(ids||[])].map(id=>getSupplier(id)?.name).filter(Boolean).join('\n');}
+function resolveRepresentationNames(value){return [...new Set(String(value||'').split(/\n|;/).map(name=>name.trim()).filter(Boolean).map(name=>resolveSupplier(name,'Marque').id))];}
 function editSupplier(id) {
   const s = getSupplier(id) || {};
   modal(
@@ -61,6 +63,7 @@ function editSupplier(id) {
           x,
         ]),
       ) +
+      field("representedBrands", "Marques représentées — pour un showroom, une marque par ligne", "textarea", representationNames(s.representedBrandIds)) +
       field("country", "Pays", "text", s.country || "") +
       field("city", "Ville", "text", s.city || "") +
       field("website", "Site / fiche source", "url", s.website || "") +
@@ -73,9 +76,11 @@ function editSupplier(id) {
     (data) => {
       if (data.website && !safeUrl(data.website))
         throw Error("Lien http ou https attendu.");
+      const representedBrandIds=resolveRepresentationNames(data.representedBrands);delete data.representedBrands;
       const record = {
         ...s,
         ...data,
+        representedBrandIds,
         id: s.id || "private-" + uid(),
         categories: s.categories || [],
         emails: s.emails || [],
@@ -96,6 +101,7 @@ function supplierDetail(id) {
     ${s.source ? `<p><a href="${esc(s.source)}" target="_blank" rel="noopener">Source de la fiche ↗</a> · relevé ${esc(s.checked || "à vérifier")}</p>` : ""}
     <p class="note">Référencement ≠ accord de prêt. Stock, tarifs, tailles et disponibilité à confirmer auprès du fournisseur.</p>
     ${s.website ? `<p><a href="${esc(s.website)}" target="_blank" rel="noopener">Consulter le site / la fiche ↗</a></p>` : ""}
+    ${s.representedBrandIds?.length?`<p><strong>Marques représentées :</strong> ${esc(representationNames(s.representedBrandIds).replaceAll('\n',' · '))}</p>`:''}
     <h3>Vos interlocuteurs liés (${contacts.length})</h3>${contacts.map((c) => `<p>${esc(c.name)} · ${esc(c.role || "")} · ${esc(c.email || "Adresse à compléter")}${c.source ? ` · <a href="${esc(c.source)}" target="_blank" rel="noopener">Source ↗</a>` : ""}</p>`).join("") || "<p>Aucun contact personnel lié.</p>"}
     <div class="actions"><button type="button" data-add-supplier-contact="${esc(id)}">＋ Ajouter un interlocuteur</button><button type="button" data-edit-supplier="${esc(id)}">Modifier ma fiche</button></div>
     ${s.emails?.length ? `<h3>Coordonnées professionnelles publiées</h3>${s.emails.map((email) => `<p>${esc(email)} <button type="button" data-import-supplier-email="${esc(id)}" data-email="${esc(email)}">Ajouter à mon carnet</button></p>`).join("")}` : '<p class="note">Pas d’adresse publique vérifiée dans cette fiche. Ajoutez votre contact presse, showroom ou location.</p>'}`,
@@ -113,7 +119,9 @@ editContact = function (id, supplierId = "") {
   modal(
     id ? "Modifier le contact" : "Ajouter un interlocuteur",
     (c.source ? `<p class="note">Coordonnée publiée · relevée le ${esc(c.checked || "à vérifier")} · <a href="${esc(c.source)}" target="_blank" rel="noopener">Consulter la source officielle ↗</a>${c.contactUrl ? " · Contact par formulaire, pas d’adresse e-mail vérifiée." : " · Fonction et disponibilité à reconfirmer."}</p>` : "") +
-    supplierOptions(c.supplierId || supplierId, "Structure liée") +
+    supplierOptions(c.supplierId || supplierId, "Structure / showroom de ce contact") +
+      field('contactBrands','Marques suivies par cette personne — une par ligne','textarea',representationNames(c.brandIds || (c.brandId?[c.brandId]:[]))) +
+      '<p class="note">Un contact peut suivre plusieurs marques. Laissez vide pour un contact général qui suit toutes les marques représentées par sa structure. La marque d’une pièce reste indépendante du showroom.</p>' +
       field("name", "Nom / service", "text", c.name || "") +
       field("email", "E-mail", "email", c.email || "") +
       field("role", "Rôle", "text", c.role || "") +
@@ -121,10 +129,13 @@ editContact = function (id, supplierId = "") {
       field("note", "Notes privées", "textarea", c.note || ""),
     (data) => {
       const supplier = resolveSupplier(data.supplierName);
+      const brandIds=resolveRepresentationNames(data.contactBrands);delete data.contactBrands;
       const { supplierName, ...rest } = data;
       const obj = {
         ...rest,
         supplierId: supplier?.id || "",
+        brandIds,
+        brandId: '',
         brand: supplier?.name || "",
       };
       if (id) {
@@ -228,9 +239,9 @@ modal = function (name, fields, callback) {
             const brand = resolveSupplier(data.brand || "", "Marque");
             const supplier = resolveSupplier(data.supplierName || "");
             const email = data.newContactEmail.trim().toLowerCase();
-            contact = db.contacts.find(c => c.email?.trim().toLowerCase() === email && (c.supplierId||"") === (supplier?.id||brand?.id||"") && (c.brandId||"") === (brand?.id||""));
+            contact = db.contacts.find(c => c.email?.trim().toLowerCase() === email && (c.supplierId||"") === (supplier?.id||brand?.id||""));
             if (!contact) {
-              contact = {id:uid(),name:data.newContactName.trim(),email,brand:brand?.name||supplier?.name||"",brandId:brand?.id||"",supplierId:supplier?.id||brand?.id||"",role:"",note:""};
+              contact = {id:uid(),name:data.newContactName.trim(),email,brand:brand?.name||supplier?.name||"",brandId:brand?.id||"",brandIds:brand?[brand.id]:[],supplierId:supplier?.id||brand?.id||"",role:"",note:""};
               db.contacts.push(contact);
             }
             data.contactName = contactLabel(contact);
@@ -289,6 +300,13 @@ function updateSupplierSuggestions() {
   const brandContext = $('#fields [data-contact-brand-context]'), supplierContext = $('#fields [data-contact-supplier-context]');
   if(brandContext)brandContext.value=$('#fields [name="brand"]')?.value || 'Non renseignée';
   if(supplierContext)supplierContext.value=supplierInput.value || 'Même interlocuteur que la marque';
+  document.querySelector('[data-use-contact-supplier]')?.remove();
+  const selectedContact=db.contacts.find(c=>contactLabel(c)===choice.value),structure=getSupplier(selectedContact?.supplierId);
+  if(structure&&supplierKey(structure.name)!==supplierKey(supplierInput.value)){
+    const use=document.createElement('button');use.type='button';use.className='quiet';use.dataset.useContactSupplier=structure.id;use.textContent='Passer par '+structure.name+' pour cette pièce';
+    use.onclick=()=>{supplierInput.value=structure.name;updateSupplierSuggestions();};
+    $('#supplier-contact-hint').after(use);
+  }
   $('#supplier-contact-hint').textContent = $('#fields [name="newContactMode"]')?.value === '1' ? 'Le contact et ses liens seront créés en enregistrant la pièce.' : db.contacts.length ? 'Contacts du fournisseur et de la marque en priorité. Le reste du carnet reste disponible ; un seul contact est lié à la pièce.' : 'Ajoutez un contact ici : sa marque et son fournisseur sont déjà préremplis.';
 }
 function togglePieceContactCreation(enabled) {
@@ -314,7 +332,7 @@ renderContacts = function () {
   const list = source.filter(
     (s) =>
       supplierKey(
-        [s.name, s.brand, s.city, s.role, s.note, ...(s.categories || [])].join(
+        [s.name, s.brand, s.city, s.role, s.note, representationNames(s.brandIds || s.representedBrandIds), ...(s.categories || [])].join(
           " ",
         ),
       ).includes(q) &&
@@ -591,3 +609,5 @@ render = function () {
   supplierMigrateRender();
 };
 render();
+
+document.addEventListener('change',event=>{if(event.target.id==='piece-contact-choice')updateSupplierSuggestions();});
