@@ -1,3 +1,26 @@
+/** L’aperçu emploie les pages exactes du moteur d’export PDF. */
+async function mountOverviewMoodboard(host, p) {
+  try {
+    const pages = await drawMoodboardPages(structuredClone(p));
+    if (!host.isConnected) return;
+    host.replaceChildren();
+    pages.forEach((page, index) => {
+      const button = document.createElement('button');
+      button.className = 'overview-pdf-page';
+      button.setAttribute('aria-label', `Agrandir le moodboard — page ${index + 1} sur ${pages.length}`);
+      const image = document.createElement('img');
+      image.src = page.jpeg; image.alt = `Moodboard — page ${index + 1} sur ${pages.length}`;
+      image.width = page.width; image.height = page.height;
+      button.append(image);
+      button.addEventListener('click', () => previewDocument(pages, 'Moodboard.pdf', 'Moodboard · ' + p.name));
+      host.append(button);
+    });
+  } catch (error) {
+    if (!host.isConnected) return;
+    host.textContent = error.message || 'Aperçu indisponible.';
+    const button = document.createElement('button'); button.dataset.tab = 'mood'; button.textContent = 'Ouvrir le moodboard'; host.append(button);
+  }
+}
 /** Actions contextuelles et vue d’ensemble du projet. */
 function refineProjectPresentation() {
   if (view !== 'detail' || workspaceIsLocked()) return;
@@ -41,8 +64,9 @@ function refineProjectPresentation() {
     const panel = heading?.closest('.panel');
     if (panel) {
       panel.classList.add('overview-inspiration');
-      panel.innerHTML = `<div class="section-head"><h2>Votre moodboard</h2><button class="quiet" data-tab="mood">Modifier ↗</button></div><button class="overview-mood-preview" data-tab="mood" aria-label="Ouvrir le moodboard">${(p.boards || []).filter(b=>b.image).slice(0,4).map(b=>`<img src="${esc(b.image)}" alt="${esc(b.caption || 'Inspiration')}">`).join('') || '<span>Ajoutez vos premières inspirations</span>'}</button><details class="overview-brief"><summary>Brief & direction artistique</summary><p>${esc(p.brief || 'Ajoutez le brief du projet.')}</p>${canEditProject(p.id)?'<button class="quiet" data-action="brief">Modifier le brief</button>':''}</details>`;
+      panel.innerHTML = `<div class="section-head"><h2>Votre moodboard</h2><button class="quiet" data-tab="mood">Modifier ↗</button></div><div class="overview-pdf-preview" aria-live="polite">${p.boards?.length ? 'Préparation de la planche…' : '<button data-tab="mood">Ajoutez vos premières inspirations</button>'}</div><details class="overview-brief"><summary>Brief & direction artistique</summary><p>${esc(p.brief || 'Ajoutez le brief du projet.')}</p>${canEditProject(p.id)?'<button class="quiet" data-action="brief">Modifier le brief</button>':''}</details>`;
     }
+    if (panel && p.boards?.length) void mountOverviewMoodboard(panel.querySelector('.overview-pdf-preview'), p);
     const flow = document.querySelector('.flow-actions');
     if (flow) {
       const details = document.createElement('details'); details.className = 'project-followup';
