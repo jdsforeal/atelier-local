@@ -48,6 +48,7 @@ function mailDraftFor(project, group, existing, signature) {
   if (existing)
     return {
       ...existing,
+      links: existing.sentAt || existing.deliveryState ? existing.links || [] : group.pieces.map(p=>({name:p.name,url:p.url})),
       stale:
         !existing.sentAt &&
         !existing.deliveryState &&
@@ -66,6 +67,7 @@ function mailDraftFor(project, group, existing, signature) {
     supplierName: name,
     recipient: emails.length === 1 ? emails[0] : "",
     subject: `Demande ${project.name} — ${name}`,
+    links: group.pieces.map(p=>({name:p.name,url:p.url})),
     body: `Bonjour,\n\nPour « ${project.name} » (${project.client || "notre studio"}), prévu le ${project.date || "date à préciser"}, nous recherchons :\n\n${mailPieceLines(group.pieces)}\n\n${project.brief || ""}\n\nPourriez-vous confirmer les tailles, disponibilités aux dates du projet et conditions ?\n\nMerci beaucoup,\n${signature || "[Votre signature à compléter]"}`,
     state: "À relire",
     signature: current,

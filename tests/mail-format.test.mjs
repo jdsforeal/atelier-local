@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import format from '../public/mail-format.js';
+import {makeMime,validateJob} from '../mail-service/core.mjs';
+const refs=[{name:'Chemise & coton',url:'https://marque.fr/chemise?couleur=bleu&taille=M'}];
+const body='Bonjour,\n• Chemise & coton — M\n  '+refs[0].url+'\n<script>alert(1)</script>';
+const html=format.html(body,refs);assert.match(html,/>Chemise &amp; coton<\/a>/);assert.match(html,/href="https:\/\/marque.fr\/chemise\?couleur=bleu&amp;taille=M"/);assert(!html.includes('<script>'));assert(!html.includes('  https://marque'));
+assert.equal(format.links([{name:'X',url:'javascript:alert(1)'},{name:'X',url:'https://user:password@site.fr'}]).length,0);
+const job={...validateJob({id:'a',recipient:'test@marque.fr',subject:'Demande',body,links:refs}),outboundId:'unique'};
+const mime=Buffer.from(makeMime(job,'studio@marque.fr'),'base64url').toString('utf8');assert.match(mime,/multipart\/alternative/);assert.match(mime,/Content-Type: text\/plain/);assert.match(mime,/Content-Type: text\/html/);const parts=mime.split('--atelier-unique');const text=Buffer.from(parts[1].split('\r\n\r\n')[1].trim(),'base64').toString();assert.equal(text,body);const rich=Buffer.from(parts[2].split('\r\n\r\n')[1].trim(),'base64').toString();assert.equal(rich,html);
+console.log('Liens mails : noms cliquables, HTML échappé, URLs dangereuses refusées et MIME texte/HTML concordant.');

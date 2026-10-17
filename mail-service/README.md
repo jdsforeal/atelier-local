@@ -89,3 +89,9 @@ Modèle proposé au 17 octobre 2026 : `gemini-3.8-flash`, dont la disponibilité
 Le contexte envoyé comporte uniquement titre/client/type/date du projet, fournisseur/contact, signature, références/modes/tailles/liens/dates de retour des pièces. Les budgets, brief, notes internes et images sont exclus. L’API est réservée au propriétaire du studio et vérifie son accès au projet. Gmail n’a pas besoin d’être connecté pour rédiger, mais le service privé doit être configuré et actif.
 
 Tester d’abord avec des projets fictifs. Aucune clé réelle et aucun appel fournisseur n’ont été utilisés dans les tests automatisés.
+
+### Aperçu enrichi et diagnostic de connexion
+
+Le client transmet les associations nom d’article / URL autorisée ; le service construit un message `multipart/alternative`, avec une version texte et une version HTML échappée. Le même formateur est utilisé pour l’aperçu. Aucune balise saisie par l’utilisateur n’est interprétée. Mettre à jour le service Gmail également pour obtenir les liens sur les noms dans les mails reçus.
+
+Une session Gmail mémorisée ne prouve pas que le service est lancé. En local, `http://127.0.0.1:8787/health` doit répondre avant de tester la rédaction ou la synchronisation. Le 17 octobre, ce port ne répondait pas lors du diagnostic du message « Failed to fetch ». Le service n’a pas été relancé automatiquement : il pourrait reprendre des envois ou relances déjà en attente. Vérifier la configuration privée et les files d’envoi avant son redémarrage. La simulation fonctionne indépendamment de ce service et sans appel à Gemini.

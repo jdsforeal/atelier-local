@@ -1,3 +1,4 @@
+import MailFormat from '../public/mail-format.js';
 const randomUUID = () => globalThis.crypto.randomUUID();
 function mailBase64(text) {
   if (typeof Buffer !== "undefined") return Buffer.from(text).toString("base64");
@@ -65,6 +66,7 @@ export function validateJob(input) {
     recipient: input.recipient,
     subject: input.subject,
     body: input.body,
+    links: MailFormat.links(input.links),
     reminderBody: input.reminderBody || "",
     reminderEnabled: input.reminderEnabled === true,
     scheduledAt: input.scheduledAt || null,
@@ -82,21 +84,22 @@ export function makeMime(job, from, followup = false) {
     `Subject: =?UTF-8?B?${mailBase64(subject)}?=`,
     `Message-ID: <${job.outboundId}@atelier.local>`,
     "MIME-Version: 1.0",
-    "Content-Type: text/plain; charset=UTF-8",
-    "Content-Transfer-Encoding: base64",
+    `Content-Type: multipart/alternative; boundary="atelier-${job.outboundId}"`,
   ];
   if (followup && job.rfcMessageId && /^<[^\r\n<>]+>$/.test(job.rfcMessageId))
     headers.push(
       "In-Reply-To: " + job.rfcMessageId,
       "References: " + job.rfcMessageId,
     );
-  return mailBase64(
-    headers.join("\r\n") +
-      "\r\n\r\n" +
-      mailBase64(followup ? job.reminderBody : job.body)
-        .match(/.{1,76}/g)
-        .join("\r\n"),
-  ).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  const body=followup?job.reminderBody:job.body;
+  const boundary='atelier-'+job.outboundId;
+  const encode=value=>mailBase64(value).match(/.{1,76}/g)?.join('\r\n')||'';
+  const parts=[
+    `--${boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n${encode(body)}`,
+    `--${boundary}\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n${encode(MailFormat.html(body,job.links))}`,
+    `--${boundary}--`
+  ].join('\r\n');
+  return mailBase64(headers.join('\r\n')+'\r\n\r\n'+parts).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 }
 export function detectReply(thread, job) {
   const newer = (thread.messages || []).filter(
