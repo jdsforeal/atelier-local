@@ -38,14 +38,6 @@ function refineProjectPresentation() {
     document.querySelectorAll('.detail-summary .tag').forEach(el => { if (/budget/i.test(el.textContent)) el.remove(); });
     document.querySelector('#client-board-prices')?.closest('label')?.remove();
   }
-  const cover = document.querySelector('.project-detail-cover');
-  if (cover && canEditProject(p.id)) {
-    cover.tabIndex = 0; cover.setAttribute('role','button'); cover.setAttribute('aria-label','Modifier l’image du projet'); cover.title = 'Modifier l’image';
-    const edit = () => projectSettings(p.id, true);
-    cover.addEventListener('click', edit);
-    cover.addEventListener('contextmenu', e => {e.preventDefault(); edit();});
-    cover.addEventListener('keydown', e => {if (['Enter',' '].includes(e.key)) {e.preventDefault(); edit();}});
-  }
   document.querySelectorAll('.piece-image-action').forEach(button => {
     const article = button.closest('article');
     const image = article?.querySelector('.piece-gallery img,.piece-thumb img,img');

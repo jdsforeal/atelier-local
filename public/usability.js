@@ -102,7 +102,6 @@ render=function () {
     const bar=document.createElement('div');bar.className='project-quick-actions';
     bar.innerHTML=`${canEditProject(p.id) ? `<button data-workspace-edit="${esc(p.id)}">Modifier le projet</button><button data-workspace-photo="${esc(p.id)}">${p.cover?'Changer':'Ajouter'} l’image</button>`:''}${cloudState.active && !demoMode ? `<button data-cloud-team>Équipe et accès</button>${rights.can_invite?'<button class="primary" data-cloud-invite>Inviter un·e assistant·e</button>':''}`:''}`;
     document.querySelector('.detail-summary')?.after(bar);
-    if(p.cover && tab==='overview')bar.insertAdjacentHTML('afterend',`<img class="project-detail-cover" src="${esc(p.cover)}" alt="Image du projet ${esc(p.name)}">`);
   }
 };
 const usabilityAccount=cloudAccount;
