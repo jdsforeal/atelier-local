@@ -3,14 +3,29 @@ function mailAIContext(p,row){
  const contact=row.group?.contacts.find(c=>mailAddress(c.email)===mailAddress(row.draft.recipient));
  return {project:{name:p.name,client:p.client,type:p.type,date:p.date},supplier:row.draft.supplierName,contactName:contact?.name||'',signature:db.mailSettings?.signature||'',pieces:(row.group?.pieces||[]).map(x=>({name:x.name,brand:x.brand,mode:x.mode,size:x.size,returnDue:x.returnDue,url:x.url}))};
 }
+function mailMissingInformation(context){
+ const fields=[];
+ const add=(key,label,type='text',piece=null)=>fields.push({key,label,type,piece});
+ if(!context.project.client)add('client','Artiste / client');
+ if(!context.project.type)add('type','Type de projet');
+ if(!context.project.date)add('date','Date du projet','date');
+ if(!context.signature)add('signature','Votre signature');
+ context.pieces.forEach((piece,index)=>{
+  if(!piece.mode)add('mode',`${piece.name} · prêt, location ou achat ?`,'text',index);
+  if(!piece.size)add('size',`${piece.name} · taille / format souhaité`,'text',index);
+  if(['Prêt','Location'].includes(piece.mode)&&!piece.returnDue)add('returnDue',`${piece.name} · date de retour envisagée`,'date',index);
+ });
+ return fields;
+}
 function mailTextSnapshot(d){return JSON.stringify([d.subject,d.body,d.reminderBody]);}
 function openMailAI(id){
  const p=project(),row=mailRows(p).find(r=>r.draft.id===id);
  if(!row||!mailCanEdit(p,row.draft))return toast('Ce message ne peut plus être modifié.');
  if(!row.group?.pieces.length)return toast('Associez les pièces à un fournisseur avant la rédaction.');
  const context=mailAIContext(p,row),before=mailTextSnapshot(row.draft),signature=row.draft.currentSignature;
+ const missing=mailMissingInformation(context);
  const dialog=document.createElement('dialog');dialog.className='mail-ai-dialog';
- dialog.innerHTML=`<div class="section-head"><div><small>AIDE À LA RÉDACTION · FACULTATIVE</small><h2>Une proposition pour ${esc(row.draft.supplierName)}</h2></div><button data-ai-close aria-label="Fermer">✕</button></div><p>Gemini reçoit les références ci-dessous pour proposer un mail et une relance. Votre texte actuel reste intact jusqu’à votre choix.</p><details><summary>Informations utilisées</summary><p>${esc(p.client||p.name)} · ${esc(p.date||'Date non précisée')} · ${context.pieces.length} pièce(s)</p><ul>${context.pieces.map(x=>`<li>${esc(x.name)} · ${esc(x.mode||'Mode à préciser')}${x.size?' · '+esc(x.size):''}</li>`).join('')}</ul><p class="note">Titre et type du projet, fournisseur, nom du contact, liens, tailles, dates de retour et signature renseignés sont également transmis. Budgets et notes internes exclus.</p></details><p class="mail-ai-status" role="status"></p><div class="mail-ai-comparison" hidden><section><h3>Texte actuel</h3><pre data-ai-current></pre></section><section><h3>Proposition IA</h3><label>Objet<input data-ai-subject></label><label>Message<textarea rows="12" data-ai-body></textarea></label><details><summary>Relance proposée</summary><textarea rows="5" data-ai-reminder></textarea></details><p class="note">Vérifiez les faits et les engagements avant d’appliquer cette proposition.</p></section></div><footer class="actions"><button data-ai-close>Garder mon texte</button><button class="primary" data-ai-generate>Créer une proposition</button><button class="primary" data-ai-apply hidden>Appliquer · à relire</button></footer>`;
+ dialog.innerHTML=`<div class="section-head"><div><small>AIDE À LA RÉDACTION · FACULTATIVE</small><h2>Une proposition pour ${esc(row.draft.supplierName)}</h2></div><button data-ai-close aria-label="Fermer">✕</button></div><p>Gemini reçoit les références ci-dessous pour proposer un mail et une relance. Votre texte actuel reste intact jusqu’à votre choix.</p><details><summary>Informations utilisées</summary><p>${esc(p.client||p.name)} · ${esc(p.date||'Date non précisée')} · ${context.pieces.length} pièce(s)</p><ul>${context.pieces.map(x=>`<li>${esc(x.name)} · ${esc(x.mode||'Mode à préciser')}${x.size?' · '+esc(x.size):''}</li>`).join('')}</ul><p class="note">Titre et type du projet, fournisseur, nom du contact, liens, tailles, dates de retour et signature renseignés sont également transmis. Budgets et notes internes exclus.</p></details>${missing.length?`<section class="mail-missing-information"><h3>Informations à compléter</h3><p>Quelques précisions peuvent rendre cette demande plus utile. Complétez ce que vous connaissez ; ces réponses servent uniquement à ce mail.</p><div class="mail-missing-fields">${missing.map((f,i)=>`<label>${esc(f.label)}<input type="${f.type}" data-ai-missing="${i}" maxlength="${f.key==='signature'?1000:300}"></label>`).join('')}</div><label class="mail-tick"><input type="checkbox" data-ai-unknown> Je ne connais pas encore toutes ces informations. Continuer sans les inventer.</label></section>`:''}<p class="mail-ai-status" role="status"></p><div class="mail-ai-comparison" hidden><section><h3>Texte actuel</h3><pre data-ai-current></pre></section><section><h3>Proposition IA</h3><label>Objet<input data-ai-subject></label><label>Message<textarea rows="12" data-ai-body></textarea></label><details><summary>Relance proposée</summary><textarea rows="5" data-ai-reminder></textarea></details><p class="note">Vérifiez les faits et les engagements avant d’appliquer cette proposition.</p></section></div><footer class="actions"><button data-ai-close>Garder mon texte</button><button class="primary" data-ai-generate>Créer une proposition</button><button class="primary" data-ai-apply hidden>Appliquer · à relire</button></footer>`;
  let proposal=null,busy=false,alive=true;
  const close=()=>{alive=false;dialog.close();dialog.remove();};
  dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
@@ -20,6 +35,16 @@ function openMailAI(id){
   const status=dialog.querySelector('.mail-ai-status');
   try{
    if(b.hasAttribute('data-ai-generate')&&!busy){
+    let unresolved=0;
+    dialog.querySelectorAll('[data-ai-missing]').forEach(input=>{
+      const f=missing[Number(input.dataset.aiMissing)],value=input.value.trim();
+      input.closest('label').classList.toggle('mail-missing-pending',!value);
+      if(!value){unresolved++;return;}
+      if(f.piece!==null)context.pieces[f.piece][f.key]=value;
+      else if(f.key==='signature')context.signature=value;
+      else context.project[f.key]=value;
+    });
+    if(unresolved&&!dialog.querySelector('[data-ai-unknown]')?.checked){status.textContent='Complétez les champs signalés ou indiquez que vous ne connaissez pas encore ces informations.';dialog.querySelector('.mail-missing-pending input')?.focus();return;}
     busy=true;b.disabled=true;status.textContent='Rédaction en cours…';
     const availability=await mailAPI('ai-status');
     if(!availability.enabled)throw Error('Gemini n’est pas encore configuré sur le service. Votre brouillon classique reste disponible.');
