@@ -5,3 +5,8 @@ const context={project:{},signature:'',pieces:[{name:'Veste',mode:'Prêt'},{name
 const missing=ctx.mailMissingInformation(context);assert.equal(missing.length,6);assert(missing.some(f=>f.key==='returnDue'&&f.piece===0));assert(!missing.some(f=>f.piece===1));assert.equal(context.project.date,undefined);
 assert.equal(ctx.mailMissingInformation({project:{client:'Artiste',type:'Clip',date:'2026-12-01'},signature:'Camille',pieces:[]}).length,0);
 console.log('Questions préalables : projet, signature, tailles et retours conditionnels, aucune donnée inventée.');
+const full=fs.readFileSync('public/mail-ai.js','utf8');const prefill={db:{mailSettings:{signature:'Signature du studio'}},mailAddress:s=>s||''};vm.createContext(prefill);vm.runInContext(full.slice(full.indexOf('function mailAIContext'),full.indexOf('function mailMissingInformation')),prefill);
+const row={draft:{currentSignature:'v1',supplierName:'Marque',aiPreparation:{sourceSignature:'v1',project:{date:'2026-12-01'},signature:'Ancienne signature',pieces:[{id:'b',size:'L'},{id:'a',size:'M',returnDue:'2026-12-05'}]}},group:{contacts:[],pieces:[{id:'a',name:'Veste',mode:'Prêt'},{id:'b',name:'Chemise',size:'S'}]}};
+let prepared=prefill.mailAIContext({name:'Projet',date:''},row);assert.equal(prepared.project.date,'2026-12-01');assert.equal(prepared.signature,'Signature du studio');assert.equal(prepared.pieces[0].size,'M');assert.equal(prepared.pieces[1].size,'S');
+row.draft.currentSignature='v2';prepared=prefill.mailAIContext({name:'Projet',date:'2026-12-10'},row);assert.equal(prepared.project.date,'2026-12-10');assert.equal(prepared.pieces[0].size,'');
+console.log('Préremplissage : données des fiches prioritaires, précisions retrouvées par pièce, contexte modifié invalidé.');
