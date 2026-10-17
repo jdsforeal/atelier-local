@@ -491,7 +491,8 @@ function quickProjectWizard() {
     "Moodboard proposé",
     "Direction validée par le client",
     "Demandes de pièces",
-    "Réceptions et essayages",
+    "Réception des vêtements",
+    "Essayages",
     "Production réalisée",
     "Retours et cautions",
     "Bilan et clôture",
@@ -513,7 +514,7 @@ function quickProjectWizard() {
           "Autre",
         ].map((t) => [t, t]),
       ) +
-      field("date", "Date principale", "date") +
+      planningFields() +
       field("projectName", "Nom personnalisé (facultatif)") +
       "<details><summary>Looks et besoins à préparer automatiquement</summary>" +
       field("lookCount", "Nombre de looks", "number", 1) +
@@ -539,20 +540,23 @@ function quickProjectWizard() {
             `<label><input type="checkbox" name="quick-stage" value="${i}" checked> ${s}</label>`,
         )
         .join("") +
-      '</details><p class="note">Les dates des tâches sont proposées autour de la date principale selon le type de projet. Elles restent modifiables ; aucun message n’est envoyé.</p>' +
+      '</details><p class="note">Les actions suivent les dates des étapes choisies. Vous pourrez ajuster leurs échéances ; aucun message n’est envoyé.</p>' +
       field("budget", "Enveloppe (€) — facultatif", "number", 0),
     (data, form) => {
       const count = Math.max(
         0,
         Math.min(5, Math.floor(Number(data.lookCount) || 0)),
       );
+      const timeline = planningRead(data);
       const p = {
         id: uid(),
         name:
           data.projectName.trim() ||
           [data.type, data.client].filter(Boolean).join(" · "),
         client: data.client,
-        date: data.date,
+        timeline,
+        date: timeline.shoot?.start || "",
+        dateEnd: timeline.shoot?.end || "",
         type: data.type,
         status: "Préparation",
         budget: Number(data.budget) || 0,
@@ -584,34 +588,21 @@ function quickProjectWizard() {
           })),
         });
       }
-      const schedules = {
-        Clip: [-21, -14, -10, -7, -2, 0, 3, 7],
-        Éditorial: [-14, -10, -7, -5, -1, 0, 2, 5],
-        Tournée: [-45, -30, -21, -14, -7, 0, 7, 14],
-        Événement: [-30, -21, -14, -10, -2, 0, 2, 7],
-        Collection: [-60, -45, -30, -21, -7, 0, 14, 21],
-      };
-      const offsets = schedules[data.type] || schedules.Clip;
+      const phaseLinks = [
+        ["preparation", "start"], ["preparation", "end"],
+        ["preparation", "end"], ["preparation", "end"],
+        ["reception", "end"], ["fittings", "end"],
+        ["shoot", "end"], ["returns", "end"], ["returns", "end"],
+      ];
       for (const el of form.querySelectorAll('[name="quick-stage"]:checked')) {
         const i = Number(el.value);
-        let date = "";
-        if (data.date) {
-          const d = new Date(data.date + "T12:00:00");
-          d.setDate(d.getDate() + offsets[i]);
-          date = [
-            d.getFullYear(),
-            String(d.getMonth() + 1).padStart(2, "0"),
-            String(d.getDate()).padStart(2, "0"),
-          ].join("-");
-        }
-        db.tasks.push({
-          id: uid(),
-          project: p.id,
-          name: stages[i],
-          date,
-          done: false,
-          template: true,
-        });
+        const [phase, phaseAnchor] = phaseLinks[i];
+        const task = {
+          id: uid(), project: p.id, name: stages[i],
+          phase, phaseAnchor, phaseOffset: 0, done: false, template: true,
+        };
+        task.date = planningTaskDate(task, p);
+        db.tasks.push(task);
       }
       db.projects.push(p);
       pid = p.id;

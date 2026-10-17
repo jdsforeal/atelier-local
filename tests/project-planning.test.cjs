@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict');
+const {planningTimeline,planningRead,planningApply,planningTaskDate}=require('../public/project-planning-model.js');
+assert.equal(planningTimeline({date:'2026-10-20'}).shoot.end,'2026-10-20');
+assert.throws(()=>planningRead({phase_preparation_start:'2026-02-30'}),/vérifiez/);
+assert.throws(()=>planningRead({phase_preparation_start:'2026-10-20',phase_preparation_end:'2026-10-19'}),/précéder/);
+assert.throws(()=>planningRead({phase_shoot_end:'2026-10-20'}),/vérifiez/);
+const p={id:'p'},db={tasks:[{id:'a',project:'p',phase:'preparation',phaseAnchor:'end',phaseOffset:-2},{id:'b',project:'p',date:'2026-10-09'},{id:'c',project:'p',phase:'preparation',done:true,date:'2026-10-01'},{id:'d',project:'other',phase:'preparation',date:'2026-10-01'}]};
+const t=planningRead({phase_preparation_start:'2026-10-10',phase_preparation_end:'2026-10-20',phase_shoot_start:'2026-10-25',phase_shoot_end:'2026-10-27'});planningApply(db,p,t);assert.equal(p.date,'2026-10-25');assert.equal(p.dateEnd,'2026-10-27');assert.equal(db.tasks[0].date,'2026-10-18');
+assert.equal(db.tasks[1].date,'2026-10-09');assert.equal(db.tasks[2].date,'2026-10-01');assert.equal(db.tasks[3].date,'2026-10-01');
+assert.equal(planningTaskDate({phase:'fittings'},p),'');
+t.preparation.end='2026-11-01';planningApply(db,p,t);assert.equal(db.tasks[0].date,'2026-10-30');assert.equal(planningTaskDate({phase:'preparation',phaseAnchor:'start',phaseOffset:-15},p),'2026-09-25');
+console.log('Planning : dates et périodes valides, migration jour J, actions liées recalculées, dates libres et actions terminées conservées.');

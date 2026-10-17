@@ -5,15 +5,16 @@ function simulationBoardImage(title,colour='#b4bea7'){
  ['#d9cbbd',colour,'#e6dfcf'].forEach((fill,i)=>{const x=50+i*370;c.fillStyle=fill;c.fillRect(x,140,345,600);c.fillStyle='#f9f6ed';c.beginPath();c.moveTo(x+95,235);c.lineTo(x+145,205);c.lineTo(x+200,205);c.lineTo(x+250,235);c.lineTo(x+300,370);c.lineTo(x+235,390);c.lineTo(x+225,650);c.lineTo(x+120,650);c.lineTo(x+110,390);c.lineTo(x+45,370);c.closePath();c.fill();});return canvas.toDataURL('image/png');
 }
 function upgradeAtelierSimulation(database){
- if(database.simulationExperienceVersion===7)return false;
+ if(database.simulationExperienceVersion===8)return false;
  const p=database.projects.find(p=>p.status!=='Terminé'&&!p.deletedAt);if(!p)return false;
  const style=simulationBoardImage('Silhouettes & matières'),direction=simulationBoardImage('Direction artistique · lumière & ambiance','#909d90');
  p.boards??=[];p.moodDocuments??=[];
  if(!p.boards.some(b=>b.kind==='da'))p.boards.push({kind:'da',image:direction,originalImage:direction,caption:'Direction artistique · exemple',url:''});
  for(const [kind,name,data] of [['stylisme','Planche stylisme déjà composée',style],['da','Planche DA reçue — exemple',direction]])if(!p.moodDocuments.some(d=>d.id==='demo-finished-'+kind))p.moodDocuments.push({id:'demo-finished-'+kind,kind,name,author:'Équipe de démonstration',type:'image/png',data});
+ if(!p.timeline&&p.date){const move=days=>{const d=new Date(p.date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);};p.timeline={preparation:{start:move(-21),end:move(-3)},reception:{start:move(-5),end:move(-3)},fittings:{start:move(-2),end:move(-2)},shoot:{start:p.date,end:p.date},returns:{start:move(1),end:move(3)}};}
  database.studioTaxProfile??={country:'BE',recovery:'full',vatNumber:''};
  database.mailSettings??={};database.mailSettings.signature||='Camille · Styliste\nAtelier de démonstration';
- database.simulationExperienceVersion=7;return true;
+ database.simulationExperienceVersion=8;return true;
 }
 const simulationProductImport=requestProductImport;
 requestProductImport=async function(raw){

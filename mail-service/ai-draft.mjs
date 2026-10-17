@@ -2,7 +2,7 @@
 const clean=(value,max=300)=>String(value||'').trim().slice(0,max);
 export function publicMailContext(input){
  if(!input||!Array.isArray(input.pieces)||!input.pieces.length||input.pieces.length>30)throw Error('Choisissez entre 1 et 30 pièces du même fournisseur.');
- return {project:{name:clean(input.project?.name),client:clean(input.project?.client),type:clean(input.project?.type),date:clean(input.project?.date,40)},supplier:clean(input.supplier),contactName:clean(input.contactName,100),signature:clean(input.signature,1000),pieces:input.pieces.map(p=>({name:clean(p.name),brand:clean(p.brand),mode:clean(p.mode,40),size:clean(p.size,80),returnDue:clean(p.returnDue,40),url:/^https:\/\//i.test(p.url||'')?clean(p.url,1500):''}))};
+ return {project:{name:clean(input.project?.name),client:clean(input.project?.client),type:clean(input.project?.type),date:clean(input.project?.date,40),dateEnd:clean(input.project?.dateEnd,40)},supplier:clean(input.supplier),contactName:clean(input.contactName,100),signature:clean(input.signature,1000),pieces:input.pieces.map(p=>({name:clean(p.name),brand:clean(p.brand),mode:clean(p.mode,40),size:clean(p.size,80),returnDue:clean(p.returnDue,40),url:/^https:\/\//i.test(p.url||'')?clean(p.url,1500):''}))};
 }
 export function validateAIProposal(value){
  if(!value||typeof value.subject!=='string'||!value.subject.trim()||value.subject.length>300||/[\r\n]/.test(value.subject)||typeof value.body!=='string'||!value.body.trim()||value.body.length>10000||typeof value.reminderBody!=='string'||!value.reminderBody.trim()||value.reminderBody.length>4000)throw Error('La proposition IA est incomplète. Votre texte actuel est conservé.');

@@ -2,7 +2,7 @@
 function mailAIContext(p,row){
  const contact=row.group?.contacts.find(c=>mailAddress(c.email)===mailAddress(row.draft.recipient));
  const saved=row.draft.aiPreparation?.sourceSignature===row.draft.currentSignature?row.draft.aiPreparation:{};
- return {project:{name:p.name,client:p.client||saved.project?.client||'',type:p.type||saved.project?.type||'',date:p.date||saved.project?.date||''},supplier:row.draft.supplierName,contactName:contact?.name||'',signature:db.mailSettings?.signature||saved.signature||'',pieces:(row.group?.pieces||[]).map(x=>{const prior=saved.pieces?.find(y=>y.id===x.id)||{};return {name:x.name,brand:x.brand,mode:x.mode||prior.mode||'',size:x.size||prior.size||'',returnDue:x.returnDue||prior.returnDue||'',url:x.url};})};
+ return {project:{name:p.name,client:p.client||saved.project?.client||'',type:p.type||saved.project?.type||'',date:p.date||saved.project?.date||'',dateEnd:p.dateEnd||''},supplier:row.draft.supplierName,contactName:contact?.name||'',signature:db.mailSettings?.signature||saved.signature||'',pieces:(row.group?.pieces||[]).map(x=>{const prior=saved.pieces?.find(y=>y.id===x.id)||{};return {name:x.name,brand:x.brand,mode:x.mode||prior.mode||'',size:x.size||prior.size||'',returnDue:x.returnDue||prior.returnDue||'',url:x.url};})};
 }
 function mailMissingInformation(context){
  const fields=[];

@@ -328,19 +328,23 @@ action = function (a) {
             v,
           ]),
         ) +
-        field("date", "Date principale", "date") +
+        planningFields() +
         field("budget", "Budget total (€)", "number", 0) +
         field("brief", "Brief et contraintes", "textarea"),
       (d) => {
         const n = {
           ...d,
           budget: Number(d.budget),
+          timeline: planningRead(d),
+          date: planningRead(d).shoot?.start || "",
+          dateEnd: planningRead(d).shoot?.end || "",
           id: uid(),
           status: "Préparation",
           tone: "sage",
           looks: [],
           boards: [],
         };
+        for(const key of Object.keys(n))if(key.startsWith("phase_"))delete n[key];
         db.projects.push(n);
         pid = n.id;
         view = "detail";
