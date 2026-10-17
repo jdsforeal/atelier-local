@@ -11,7 +11,9 @@ import path from "node:path";
 import { addJobs, processAccount, rescheduleJob } from "./core.mjs";
 import { createCloudMailAuth } from "./cloud-auth.mjs";
 import { mailRecipientGuard, guardMailTransport } from "./safety.mjs";
+import { createAIDrafter } from './ai-draft.mjs';
 const env = process.env;
+const aiDrafter = createAIDrafter(env);
 const assertAccount=mailRecipientGuard(env.MAIL_MODE || "sandbox",env.MAIL_TEST_ACCOUNTS || "");
 const assertRecipient=mailRecipientGuard(env.MAIL_MODE || "sandbox",env.MAIL_TEST_RECIPIENTS || "");
 for (const key of [
@@ -306,6 +308,15 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     const cloudContext=requireCloud?await cloudAuth.owner(req.headers["x-atelier-token"],req.headers["x-atelier-studio"]):null;
+    if (url.pathname === '/api/mail/ai-status' && req.method === 'GET') {
+      reply(res, 200, {enabled:aiDrafter.ready()}); return;
+    }
+    if (url.pathname === '/api/mail/ai-draft' && req.method === 'POST') {
+      const input = await body(req);
+      if(requireCloud)await cloudAuth.project(cloudContext,{project:input.projectId});
+      const proposal=await aiDrafter.draft(input.context,requireCloud?cloudContext.userId:req.socket.remoteAddress);
+      reply(res,200,{proposal});return;
+    }
     if (url.pathname === "/api/mail/connect" && req.method === "POST") {
       const ip = req.socket.remoteAddress;
       const rate = rates.get(ip) || { start: Date.now(), count: 0 };

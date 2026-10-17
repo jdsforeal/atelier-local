@@ -77,3 +77,15 @@ Configuration Google à réaliser une fois dans le projet existant : activer Gma
 La validation d’un lot permet de choisir une date et une heure dans le fuseau de l’appareil. Le navigateur transmet un instant UTC au service, qui conserve le lot et ne l’envoie pas avant cet instant. Les relances partent du moment d’envoi effectif. La date peut être déplacée et l’envoi annulé tant que le traitement n’a pas commencé. Les droits et les restrictions de destinataires sont toujours vérifiés.
 
 Le service doit rester actif ; son traitement s’exécute environ chaque minute. Une interruption retarde les envois à sa reprise. Mettre à jour puis redémarrer le service pour activer la fonction ; le client désactive la programmation si le serveur ne renvoie pas `schedulingSupported: true`. Le déploiement du seul site ne met pas à jour le service Gmail.
+
+### Rédaction Gemini facultative — pilote gratuit
+
+Les boutons de rédaction proposent un texte à comparer, appliquer ou écarter. L’application ne valide ni n’envoie une proposition IA automatiquement ; le texte précédent reste disponible. Les brouillons classiques fonctionnent sans Gemini.
+
+Configuration privée : `MAIL_AI_ENABLED=1`, `GEMINI_API_KEY`, `GEMINI_MODEL` et `GEMINI_FREE_TIER_CONFIRMED=1`. Cette dernière valeur confirme que le propriétaire a vérifié dans AI Studio que la clé appartient à un projet Free Tier sans facturation activée. Le code ne peut pas déduire le plan de facturation de la clé ; si le propriétaire active la facturation chez Google, une requête pourrait devenir payante. Ne pas activer cette configuration avant cette vérification. Les clés ne doivent jamais être placées dans `public/` ou dans le dépôt.
+
+Modèle proposé au 17 octobre 2026 : `gemini-3.8-flash`, dont la disponibilité gratuite doit être vérifiée sur le projet. Sources : https://ai.google.dev/gemini-api/docs/pricing et https://ai.google.dev/gemini-api/docs/generate-content/structured-output . Pas de changement automatique de modèle, pas de retry automatique. En cas de quota atteint ou d’échec, le brouillon reste inchangé. Une limite supplémentaire de 20 tentatives par utilisateur et par jour UTC est appliquée en mémoire (réinitialisée au redémarrage) ; ce n’est pas un plafond de facturation Google.
+
+Le contexte envoyé comporte uniquement titre/client/type/date du projet, fournisseur/contact, signature, références/modes/tailles/liens/dates de retour des pièces. Les budgets, brief, notes internes et images sont exclus. L’API est réservée au propriétaire du studio et vérifie son accès au projet. Gmail n’a pas besoin d’être connecté pour rédiger, mais le service privé doit être configuré et actif.
+
+Tester d’abord avec des projets fictifs. Aucune clé réelle et aucun appel fournisseur n’ont été utilisés dans les tests automatisés.

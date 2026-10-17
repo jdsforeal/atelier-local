@@ -1,0 +1,77 @@
+/** L’IA propose ; la personne conserve la décision sur le texte et l’envoi. */
+function mailAIContext(p,row){
+ const contact=row.group?.contacts.find(c=>mailAddress(c.email)===mailAddress(row.draft.recipient));
+ return {project:{name:p.name,client:p.client,type:p.type,date:p.date},supplier:row.draft.supplierName,contactName:contact?.name||'',signature:db.mailSettings?.signature||'',pieces:(row.group?.pieces||[]).map(x=>({name:x.name,brand:x.brand,mode:x.mode,size:x.size,returnDue:x.returnDue,url:x.url}))};
+}
+function mailTextSnapshot(d){return JSON.stringify([d.subject,d.body,d.reminderBody]);}
+function openMailAI(id){
+ const p=project(),row=mailRows(p).find(r=>r.draft.id===id);
+ if(!row||!mailCanEdit(p,row.draft))return toast('Ce message ne peut plus être modifié.');
+ if(!row.group?.pieces.length)return toast('Associez les pièces à un fournisseur avant la rédaction.');
+ const context=mailAIContext(p,row),before=mailTextSnapshot(row.draft),signature=row.draft.currentSignature;
+ const dialog=document.createElement('dialog');dialog.className='mail-ai-dialog';
+ dialog.innerHTML=`<div class="section-head"><div><small>AIDE À LA RÉDACTION · FACULTATIVE</small><h2>Une proposition pour ${esc(row.draft.supplierName)}</h2></div><button data-ai-close aria-label="Fermer">✕</button></div><p>Gemini reçoit les références ci-dessous pour proposer un mail et une relance. Votre texte actuel reste intact jusqu’à votre choix.</p><details><summary>Informations utilisées</summary><p>${esc(p.client||p.name)} · ${esc(p.date||'Date non précisée')} · ${context.pieces.length} pièce(s)</p><ul>${context.pieces.map(x=>`<li>${esc(x.name)} · ${esc(x.mode||'Mode à préciser')}${x.size?' · '+esc(x.size):''}</li>`).join('')}</ul><p class="note">Titre et type du projet, fournisseur, nom du contact, liens, tailles, dates de retour et signature renseignés sont également transmis. Budgets et notes internes exclus.</p></details><p class="mail-ai-status" role="status"></p><div class="mail-ai-comparison" hidden><section><h3>Texte actuel</h3><pre data-ai-current></pre></section><section><h3>Proposition IA</h3><label>Objet<input data-ai-subject></label><label>Message<textarea rows="12" data-ai-body></textarea></label><details><summary>Relance proposée</summary><textarea rows="5" data-ai-reminder></textarea></details><p class="note">Vérifiez les faits et les engagements avant d’appliquer cette proposition.</p></section></div><footer class="actions"><button data-ai-close>Garder mon texte</button><button class="primary" data-ai-generate>Créer une proposition</button><button class="primary" data-ai-apply hidden>Appliquer · à relire</button></footer>`;
+ let proposal=null,busy=false,alive=true;
+ const close=()=>{alive=false;dialog.close();dialog.remove();};
+ dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
+ dialog.addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.hasAttribute('data-ai-close'))return close();
+  const status=dialog.querySelector('.mail-ai-status');
+  try{
+   if(b.hasAttribute('data-ai-generate')&&!busy){
+    busy=true;b.disabled=true;status.textContent='Rédaction en cours…';
+    const availability=await mailAPI('ai-status');
+    if(!availability.enabled)throw Error('Gemini n’est pas encore configuré sur le service. Votre brouillon classique reste disponible.');
+    const result=await mailAPI('ai-draft',{projectId:p.id,context});if(!alive)return;
+    proposal=result.proposal;
+    if(!proposal?.subject||!proposal.body||!proposal.reminderBody)throw Error('La proposition est incomplète. Votre texte est conservé.');
+    dialog.querySelector('[data-ai-current]').textContent=row.draft.subject+'\n\n'+row.draft.body;
+    dialog.querySelector('[data-ai-subject]').value=proposal.subject;
+    dialog.querySelector('[data-ai-body]').value=proposal.body;
+    dialog.querySelector('[data-ai-reminder]').value=proposal.reminderBody;
+    dialog.querySelector('.mail-ai-comparison').hidden=false;
+    dialog.querySelector('[data-ai-apply]').hidden=false;b.hidden=true;
+    status.textContent='Proposition prête. Vous pouvez la modifier ou garder votre texte.';
+   }
+   if(b.hasAttribute('data-ai-apply')&&proposal){
+    const current=mailRows(p).find(r=>r.draft.id===id);
+    if(!current||!mailCanEdit(p,current.draft)||current.draft.currentSignature!==signature||mailTextSnapshot(current.draft)!==before)throw Error('Le projet ou le brouillon a changé. Fermez puis relancez la rédaction pour repartir des bonnes informations.');
+    const next={subject:dialog.querySelector('[data-ai-subject]').value.trim(),body:dialog.querySelector('[data-ai-body]').value.trim(),reminderBody:dialog.querySelector('[data-ai-reminder]').value.trim()};
+    if(!next.subject||/[\r\n]/.test(next.subject)||!next.body)throw Error('Complétez l’objet et le message.');
+    const d=mailRecord(current.draft),previous=structuredClone(d);
+    if(row.draft.subject?.startsWith('[TEST ATELIER] ')&&!next.subject.startsWith('[TEST ATELIER] '))next.subject='[TEST ATELIER] '+next.subject;
+    Object.assign(d,next,{signature,aiPrevious:{subject:d.subject,body:d.body,reminderBody:d.reminderBody},state:'À relire',aiAssisted:true});
+    if(save()===false){Object.keys(d).forEach(k=>delete d[k]);Object.assign(d,previous);throw Error('La sauvegarde a échoué. Le texte précédent est conservé.');}
+    close();mailRefresh();toast('Proposition appliquée. Relisez et validez avant l’envoi.');
+   }
+  }catch(error){if(alive)status.textContent=error.message;}finally{busy=false;if(alive)b.disabled=false;}
+ });document.body.append(dialog);dialog.showModal();
+}
+const aiPreviousMailRow=mailRowHTML;
+mailRowHTML=function(p,row){
+ let html=aiPreviousMailRow(p,row);
+ if(!mailIsSent(row.draft)) {
+  const issue=mailValidationError(row.draft,demoMode);
+  const review=issue||((row.draft.state!=='Validé')?'Message à relire et à valider.':'Tout est prêt pour ce fournisseur.');
+  const missing=[];if(!p.date)missing.push('Date du projet non renseignée');
+  if(row.group?.pieces.some(x=>!x.size))missing.push('Certaines tailles ne sont pas renseignées');
+  const checklist=`<div class="mail-preparation-check ${issue?'needs-attention':''}"><strong>${esc(review)}</strong>${missing.length?`<small>À préciser si nécessaire : ${missing.map(esc).join(' · ')}.</small>`:''}</div>`;
+  html=html.replace('<div class="mail-row-grid">',checklist+'<div class="mail-row-grid">');
+ }
+
+ if(!mailCanEdit(p,row.draft))return html;
+ const toolbar=`<div class="mail-ai-tools"><button data-mail-ai="${esc(row.draft.id)}">Proposer une rédaction IA</button>${row.draft.aiPrevious?`<button class="quiet" data-mail-ai-restore="${esc(row.draft.id)}">Revenir au texte précédent</button>`:''}<small>Facultatif · aucun envoi automatique</small></div>`;
+ return html.replace('</summary><label>Objet', '</summary>'+toolbar+'<label>Objet');
+};
+document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;
+ if(b.dataset.mailAi)openMailAI(b.dataset.mailAi);
+ if(b.dataset.mailAiRestore){try{updateMailDraft(b.dataset.mailAiRestore,d=>{if(!d.aiPrevious)return;const current={subject:d.subject,body:d.body,reminderBody:d.reminderBody};Object.assign(d,d.aiPrevious);d.aiPrevious=current;d.state='À relire';d.aiAssisted=false;});mailRefresh();}catch(error){toast(error.message);}}
+});
+const aiPreviousMessages=messages;
+messages=function(p){
+ const rows=mailRows(p),selected=rows.filter(r=>mailSelection.has(r.draft.id));
+ const ready=selected.filter(r=>mailCanEdit(p,r.draft)&&r.draft.state==='Validé'&&!r.draft.stale&&!r.draft.orphan&&r.group?.key!=='unassigned'&&!mailValidationError(r.draft,demoMode));
+ return `<div class="mail-preparation-path"><span>1 · Choisir les fournisseurs</span><span>2 · Relire chaque message</span><span>3 · Envoyer ou programmer</span></div><p class="note">${selected.length} fournisseur(s) coché(s) · ${ready.length} message(s) prêt(s)${selected.length>ready.length?' · Complétez les messages signalés ou décochez-les pour les traiter plus tard.':''}</p>`+aiPreviousMessages(p);
+};
+render();

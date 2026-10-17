@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {createAIDrafter,publicMailContext,validateAIProposal} from '../mail-service/ai-draft.mjs';
+const input={project:{name:'Éditorial',client:'Artiste',date:'2026-11-10',budget:999,brief:'INTERNE'},supplier:'Marque',signature:'Camille · Styliste',pieces:[{name:'Chemise',brand:'Marque',mode:'Prêt',size:'M',url:'https://marque.fr/chemise',price:500,note:'INTERNE',purchaseTax:{rate:21}}]};
+const clean=publicMailContext(input);assert(!JSON.stringify(clean).includes('INTERNE'));assert(!JSON.stringify(clean).includes('999'));assert(!JSON.stringify(clean).includes('500'));
+let calls=0;const proposal={subject:'Prêt pour un éditorial',body:'Bonjour, est-ce qu’un prêt serait envisageable ? Camille',reminderBody:'Bonjour, avez-vous pu regarder ma demande ?'};
+const env={MAIL_AI_ENABLED:'1',GEMINI_FREE_TIER_CONFIRMED:'1',GEMINI_API_KEY:'test-only',GEMINI_MODEL:'gemini-3.8-flash'};
+const fake=async(url,options)=>{calls++;assert.match(url,/generativelanguage.googleapis.com/);assert.equal(options.headers['x-goog-api-key'],'test-only');assert(!options.body.includes('INTERNE'));return {ok:true,status:200,json:async()=>({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify(proposal)}]}}]})}};
+const drafter=createAIDrafter(env,fake);assert.deepEqual(await drafter.draft(input,'user'),proposal);assert.equal(input.project.brief,'INTERNE');
+const disabled=createAIDrafter({...env,GEMINI_FREE_TIER_CONFIRMED:'0'},fake);await assert.rejects(disabled.draft(input,'user'),/pas activée/);assert.equal(calls,1);
+const quota=createAIDrafter(env,async()=>({status:429,ok:false}));await assert.rejects(quota.draft(input,'user'),/Quota gratuit/);
+for(let i=1;i<20;i++)await drafter.draft(input,'user');await assert.rejects(drafter.draft(input,'user'),/Limite du pilote/);assert.equal(calls,20);
+assert.throws(()=>validateAIProposal({...proposal,subject:'Objet\nBCC: test@site.fr'}),/incomplète/);
+const incomplete=createAIDrafter(env,async()=>({ok:true,json:async()=>({candidates:[{finishReason:'MAX_TOKENS'}]})}));await assert.rejects(incomplete.draft(input,'other'),/pas abouti/);
+console.log('IA mail : données minimales, clé côté serveur, activation explicite, quota sans relance payante et réponses incomplètes contrôlés. Aucun appel réel.');
